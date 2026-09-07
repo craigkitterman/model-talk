@@ -95,9 +95,7 @@ export async function verify(run, commits, ledger) {
   }
   // The ledger must belong to whoever published the run; otherwise this is someone else's
   // transcript re-uploaded, and their anchoring says nothing about this copy.
-  if (ledger && run.uid && ledger.uid && ledger.uid !== run.uid) {
-    return { status: "derivative", detail: "This run was published by a different account than the one that anchored its ledger. It may be a faithful copy, but the attestation belongs to the original.", chain, matched: 0, spanMs: 0 };
-  }
+  const foreign = !!(ledger && run.uid && ledger.uid && ledger.uid !== run.uid);
   // The envelope (models, briefs, config) was anchored at open; the reader must see the same one.
   if (ledger && ledger.envelope) {
     const env = await envelopeHash({ ...run.config, scenarioId: run.scenarioId, mode: run.mode, briefs: run.briefs, A: run.config?.A, B: run.config?.B });
@@ -142,6 +140,9 @@ export async function verify(run, commits, ledger) {
   }
   if (missing > 0) {
     return { status: "partial", detail: `${matched} of ${chain.length} turns were anchored live; ${missing} ${missing === 1 ? "was" : "were"} never committed (offline at the time, or inherited from a fork). Every anchored turn matches.`, chain, matched, spanMs };
+  }
+  if (foreign) {
+    return { status: "derivative", detail: `The transcript matches a ledger that was anchored live, in order, over ${fmtSpan(spanMs)}: all ${matched} turns, complete. But it was published by a different account than the one that anchored it, so treat it as a faithful re-upload rather than the original publisher's attestation.`, chain, matched, spanMs };
   }
   return { status: "attested", detail: `All ${matched} turns were committed to the ledger as they happened, in order, over ${fmtSpan(spanMs)}. The transcript matches every commit.`, chain, matched, spanMs };
 }

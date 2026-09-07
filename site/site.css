@@ -47,7 +47,7 @@ main{padding:48px 0 96px}
 .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:var(--radius);font-family:var(--ui);font-size:var(--mt-text-xs);font-weight:800;letter-spacing:var(--mt-tracking-label);text-transform:uppercase;border:1px solid}
 .badge.attested{color:var(--good);border-color:rgba(63,224,168,.5);background:rgba(63,224,168,.06)}
 .badge.partial{color:var(--amber);border-color:rgba(255,176,32,.5);background:rgba(255,176,32,.06)}
-.badge.derivative{color:var(--dim);border-color:var(--edge-hot)}
+.badge.derivative{color:var(--good);border-color:rgba(63,224,168,.35);background:rgba(63,224,168,.04)}
 .badge.unverified{color:var(--amber);border-color:rgba(255,176,32,.5);background:rgba(255,176,32,.06)}
 .badge.tampered{color:var(--hazard);border-color:rgba(255,77,61,.5);background:rgba(255,77,61,.06)}
 .badge.pending{color:var(--dim);border-color:var(--edge-hot)}
