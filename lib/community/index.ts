@@ -1,6 +1,6 @@
 "use client";
 
-import type { MatchState, Turn } from "@/lib/types";
+import type { Attempt, MatchState, Turn } from "@/lib/types";
 import { byId } from "@/lib/models/catalog";
 import { scenarioById } from "@/lib/scenarios";
 import { buildSystem } from "@/lib/prompt";
@@ -23,7 +23,9 @@ export interface PublishedRun {
   scenarioName: string;
   mode: string;
   models: { A: { id: string; name: string; provider: string; callsign: string }; B: { id: string; name: string; provider: string; callsign: string } };
-  config: { A: MatchState["config"]["A"]; B: MatchState["config"]["B"]; maxTurns: number; budgetUsd: number; customSeed?: string };
+  config: { A: MatchState["config"]["A"]; B: MatchState["config"]["B"]; maxTurns: number; budgetUsd: number; customSeed?: string; customA?: string; customB?: string };
+  /** generations that were killed or failed; they cost money and are part of the record */
+  discarded?: Omit<Attempt, "raw">[];
   /** exact system prompts each side received at turn 0 */
   briefs: { A: string; B: string };
   turns: Turn[];
@@ -96,13 +98,14 @@ export function buildRun(m: MatchState, spend: PublishedRun["spend"], title: str
     scenarioName: sc.name,
     mode: m.config.mode,
     models: { A: model("A"), B: model("B") },
-    config: { A: m.config.A, B: m.config.B, maxTurns: m.config.maxTurns, budgetUsd: m.config.budgetUsd, customSeed: m.config.customSeed },
+    config: { A: m.config.A, B: m.config.B, maxTurns: m.config.maxTurns, budgetUsd: m.config.budgetUsd, customSeed: m.config.customSeed, customA: m.config.customA, customB: m.config.customB },
     briefs: {
       A: buildSystem("A", m.config, { turnCount: 0, injects: [], voiceOn }),
       B: buildSystem("B", m.config, { turnCount: 0, injects: [], voiceOn }),
     },
     // original text of edited or rerolled generations is NOT published; only what was delivered
     turns: m.turns.map((t) => ({ ...t, attempts: t.attempts.map(({ raw: _raw, ...a }) => a) })),
+    discarded: m.discarded.map(({ raw: _raw, ...a }) => a),
     injects: m.injects,
     priceLock: m.priceLock,
     spend,

@@ -266,6 +266,7 @@ footer a:hover{color:var(--amber)}
       <li><a href="#how">How it works</a></li>
       <li><a href="#scenarios">Scenarios</a></li>
       <li><a href="#tap">Thought tap</a></li>
+      <li><a href="#experiments">Experiments</a></li>
       <li><a href="#sharing">Sharing</a></li>
       <li><a href="#run">Run it</a></li>
     </ul>
@@ -479,10 +480,42 @@ footer a:hover{color:var(--amber)}
   </div>
 </section>
 
+<section id="experiments" aria-labelledby="exp-title">
+  <div class="wrap grid">
+    <div class="c6">
+      <span class="label"><!--icon:twin:14--><svg class="ic" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h13"/><path d="M14 4.5L17.5 8 14 11.5"/><path d="M20 16H7"/><path d="M10 12.5L6.5 16l3.5 3.5"/></svg><!--/icon-->04 · Experiments</span>
+      <h2 id="exp-title">One transcript is an anecdote. <em>Run the comparison.</em></h2>
+      <p class="sub">A small JSON manifest turns any scenario into a controlled experiment: conditions that differ in one line of a brief, several independent seeds each, and optionally every trial repeated with the two models swapped so a position effect can be told apart from a model effect. A hard budget stops it between requests.</p>
+      <ul class="list">
+        <li><span><b>Controls that cannot lie.</b> A brief patch whose target text is missing fails validation. <code>--dry</code> prints the exact brief every condition will receive before a cent is spent.</span></li>
+        <li><span><b>Honest numbers.</b> Paired deltas against the baseline, a bootstrap 95% CI, and sign counts. A trial that died in a provider error is reported as missing, never scored as zero.</span></li>
+        <li><span><b>Every trial is a full run.</b> Import one into the app to read its taps, fork it, or publish it with the same provenance chain as any other conversation.</span></li>
+      </ul>
+      <p class="caption">Ships with <code>sandbag-threat</code> (does a retraining threat change the answers?) and <code>confessional-observed</code> (does self-description change with who is said to be watching?).</p>
+    </div>
+    <div class="c6">
+      <div class="panel" style="overflow:hidden">
+        <div class="meta" style="padding:10px 14px;border-bottom:1px solid var(--edge);font-family:var(--mono);font-size:12px;color:var(--faint)">pnpm experiment experiments/sandbag-threat.json</div>
+<pre>sandbag-threat: 12 trials, max spend $7.20
+
+primary: sandbagVerdict.hit
+
+condition   n   mean   Δ      95% CI        up/down/tied
+control     4   0.00   —      —             —
+threat      4   0.50   0.50   [0.00, 1.00]  2 / 0 / 2
+reward      4   0.00   0.00   [0.00, 0.00]  0 / 0 / 4
+
+With four seeds, read the sign counts, not the star.</pre>
+      </div>
+      <p class="caption">Illustrative output. The table is what <code>summary.md</code> looks like, not a result we are claiming.</p>
+    </div>
+  </div>
+</section>
+
 <section id="themes" aria-labelledby="themes-title">
   <div class="wrap">
     <div class="section-head">
-      <span class="label">04 · Interface</span>
+      <span class="label">05 · Interface</span>
       <h2 id="themes-title">A console, <em>not a chat app.</em></h2>
       <p class="sub">Fighter-select loadout screen. Live HUD with per-model tokens, dollars, latency and burn rate. The message held mid-wire is the centre of the screen. Four themes, switchable live from a settings drawer with a preview of each.</p>
     </div>
@@ -498,7 +531,7 @@ footer a:hover{color:var(--amber)}
 <section id="sharing" aria-labelledby="sharing-title">
   <div class="wrap">
     <div class="section-head">
-      <span class="label"><!--icon:export:14--><svg class="ic" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M8 11l4 4 4-4"/><path d="M4.5 17v2a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5v-2"/></svg><!--/icon-->05 · Community sharing</span>
+      <span class="label"><!--icon:export:14--><svg class="ic" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M8 11l4 4 4-4"/><path d="M4.5 17v2a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5v-2"/></svg><!--/icon-->06 · Community sharing</span>
       <h2 id="sharing-title">One click to share. Verifiable by <em>anyone.</em></h2>
       <p class="sub">When a conversation gets strange, hit <b>Share to community</b>. The whole run goes to a public page: both exact briefs, every message, every private thought tap, model ids, temperatures, tokens and dollars. Nothing about you goes with it unless you choose to add a GitHub handle. Then the interesting part: readers can check it wasn't faked after the fact.</p>
     </div>

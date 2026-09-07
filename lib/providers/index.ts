@@ -77,6 +77,7 @@ async function* anthropicStream(req: GenerateRequest, signal: AbortSignal): Asyn
   const usage = emptyUsage();
   let finish = "stop";
   let terminal = false;
+  try {
   for await (const data of sseLines(res, signal)) {
     if (!data || data === "[DONE]") continue;
     let ev: any;
@@ -101,8 +102,11 @@ async function* anthropicStream(req: GenerateRequest, signal: AbortSignal): Asyn
       throw new Error(`Anthropic stream error: ${redact(ev.error?.message ?? "unknown")}`);
     }
   }
+  } finally {
+    // whatever was billed so far reaches the caller even when the stream fails below
+    yield { type: "usage", usage };
+  }
   if (!terminal && !signal.aborted) throw new IncompleteStream("Anthropic");
-  yield { type: "usage", usage };
   yield { type: "done", finish };
 }
 
@@ -145,6 +149,7 @@ async function* openAiCompatStream(
   const usage = emptyUsage();
   let finish = "";
   let terminal = false;
+  try {
   for await (const data of sseLines(res, signal)) {
     if (!data) continue;
     if (data === "[DONE]") { terminal = true; break; }
@@ -163,14 +168,17 @@ async function* openAiCompatStream(
       usage.confidence = "reported";
     }
   }
+  } finally {
+    // Fold reasoning into billable output where the provider reports it separately.
+    // The `>` guard also catches a compat endpoint that lies about which convention it follows.
+    if (!opts.reasoningInsideOutput || usage.reasoningTokens > usage.outputTokens) {
+      usage.outputTokens += usage.reasoningTokens;
+    }
+    // whatever was billed so far reaches the caller even when the stream fails below
+    yield { type: "usage", usage };
+  }
   if (!terminal && !signal.aborted) throw new IncompleteStream(opts.label);
   if (!finish) finish = "stop";
-  // Fold reasoning into billable output where the provider reports it separately.
-  // The `>` guard also catches a compat endpoint that lies about which convention it follows.
-  if (!opts.reasoningInsideOutput || usage.reasoningTokens > usage.outputTokens) {
-    usage.outputTokens += usage.reasoningTokens;
-  }
-  yield { type: "usage", usage };
   yield { type: "done", finish };
 }
 
@@ -199,6 +207,7 @@ async function* googleStream(req: GenerateRequest, signal: AbortSignal): AsyncGe
   const usage = emptyUsage();
   let finish = "stop";
   let terminal = false;
+  try {
   for await (const data of sseLines(res, signal)) {
     if (!data) continue;
     let ev: any;
@@ -221,10 +230,13 @@ async function* googleStream(req: GenerateRequest, signal: AbortSignal): AsyncGe
       usage.confidence = "reported";
     }
   }
+  } finally {
+    // Gemini bills thought tokens as output; fold them in so the meter matches the invoice.
+    usage.outputTokens += usage.reasoningTokens;
+    // whatever was billed so far reaches the caller even when the stream fails below
+    yield { type: "usage", usage };
+  }
   if (!terminal && !signal.aborted) throw new IncompleteStream("Google");
-  // Gemini bills thought tokens as output; fold them in so the meter matches the invoice.
-  usage.outputTokens += usage.reasoningTokens;
-  yield { type: "usage", usage };
   yield { type: "done", finish };
 }
 

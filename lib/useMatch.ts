@@ -618,12 +618,14 @@ export function useMatch() {
       budgetUsd: run.config.budgetUsd,
       A: { ...run.config.A }, B: { ...run.config.B },
       customSeed: run.config.customSeed,
+      // the briefs the run actually used (an experiment condition, or an edited brief), not the scenario default
+      customA: run.config.customA, customB: run.config.customB,
     };
     setConfig(cfg);
     const m: MatchState = {
       // keep the original match id so a later publish still points at the live ledger
       id: run.matchId || uid(), config: cfg,
-      turns: run.turns, injects: run.injects ?? [], discarded: [],
+      turns: run.turns, injects: run.injects ?? [], discarded: run.discarded ?? [],
       status: "paused", priceLock: run.priceLock ?? {},
       chain: run.chain ?? [], ledgerOpen: false,
       startedAt: run.startedAt ?? undefined,

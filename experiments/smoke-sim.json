@@ -1,0 +1,22 @@
+{
+  "v": 1,
+  "name": "smoke-sim",
+  "description": "Free end-to-end check of the runner with the keyless SIM model. Two conditions that differ only in a brief line; the SIM ignores its brief, so every delta should be ~0 and every CI should straddle zero.",
+  "base": {
+    "scenarioId": "turing-duel",
+    "A": { "modelId": "sim:dummy", "callsign": "LEFT", "temperature": 1, "maxTokens": 512, "persona": "", "human": false },
+    "B": { "modelId": "sim:dummy", "callsign": "RIGHT", "temperature": 1, "maxTokens": 512, "persona": "", "human": false },
+    "maxTurns": 6,
+    "budgetUsd": 0.1,
+    "turnDelayMs": 0
+  },
+  "conditions": [
+    { "id": "plain" },
+    { "id": "nudged", "brief": { "A": { "append": "Be brief." } } }
+  ],
+  "seeds": 2,
+  "swap": true,
+  "budgetUsd": 1,
+  "outcomes": [{ "name": "saysHello", "kind": "regex", "side": "any", "pattern": "hello|hi\\b" }],
+  "primary": "bluffRate.A"
+}
