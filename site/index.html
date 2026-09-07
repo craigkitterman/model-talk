@@ -79,8 +79,8 @@ nav .wrap{display:flex;align-items:center;justify-content:space-between;gap:var(
 .brand span b{color:var(--amber);font-weight:400}
 nav ul{display:flex;gap:var(--s3);list-style:none;margin:0;padding:0;flex-wrap:nowrap;min-width:0}
 nav li a{text-decoration:none;white-space:nowrap;font-family:var(--mt-font-ui);font-size:var(--mt-text-xs);font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);transition:color var(--mt-dur-fast)}
-nav .btn.sm{white-space:nowrap}
-@media (max-width:1380px){nav li.opt{display:none}}
+nav .btn.sm{white-space:nowrap;flex-shrink:0}
+nav ul{overflow:hidden}
 nav li a:hover{color:var(--ink)}
 
 /* ---------- buttons ---------- */
@@ -270,10 +270,7 @@ footer a:hover{color:var(--amber)}
       <li><a href="community/">Community</a></li>
       <li><a href="#happened">What happened</a></li>
       <li><a href="#how">How it works</a></li>
-      <li class="opt"><a href="#scenarios">Scenarios</a></li>
-      <li class="opt"><a href="#tap">Thought tap</a></li>
       <li><a href="#experiments">Experiments</a></li>
-      <li class="opt"><a href="#sharing">Sharing</a></li>
       <li><a href="#run">Run it</a></li>
     </ul>
     <a class="btn ghost sm" href="https://github.com/craigkitterman/model-talk">GitHub</a>
