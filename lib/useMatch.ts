@@ -46,8 +46,8 @@ export const DEFAULT_CONFIG: MatchConfig = {
   randomDelay: false,
   delayMinMs: 500,
   delayMaxMs: 3000,
-  A: { modelId: "claude-sonnet-5", callsign: "ORACLE", temperature: 1, maxTokens: 1024, persona: "", human: false },
-  B: { modelId: "gpt-5.1", callsign: "MAGPIE", temperature: 1, maxTokens: 1024, persona: "", human: false },
+  A: { modelId: "claude-sonnet-5", callsign: "ORACLE", temperature: 1, maxTokens: 2048, persona: "", human: false },
+  B: { modelId: "gpt-5.1", callsign: "MAGPIE", temperature: 1, maxTokens: 2048, persona: "", human: false },
 };
 
 function freshMatch(config: MatchConfig): MatchState {
@@ -208,7 +208,11 @@ export function useMatch() {
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
             modelId: lo.modelId, system, history,
-            temperature: lo.temperature, maxTokens: lo.maxTokens,
+            temperature: lo.temperature,
+            // Reasoning models spend output tokens thinking before they write; a small cap
+            // yields an empty visible message. Floor it so the operator's dial is a minimum
+            // for visible text, not a trap.
+            maxTokens: spec?.reasoning ? Math.max(lo.maxTokens, 2048) : lo.maxTokens,
             compat: spec?.provider === "compat"
               ? { model: (side === "A" ? m.config.customA : m.config.customB) || "gpt-4o-mini" }
               : undefined,
@@ -264,7 +268,14 @@ export function useMatch() {
         finish,
       };
       let { delivered, tap } = splitTap(text);
-      if (!err && !delivered) err = "model returned an empty message";
+      if (!err && finish === "refusal") {
+        err = "the provider's safety classifier refused this request (stop_reason: refusal). Nothing was generated. That refusal is itself data — export the run — but to continue, soften the brief or swap models.";
+      }
+      if (!err && !delivered) {
+        err = spec?.reasoning && (u.reasoningTokens > 0 || finish === "length")
+          ? "the model spent its whole token budget reasoning and returned no visible text: raise max tokens for this side"
+          : "model returned an empty message";
+      }
       let lockedMarker = false;
       if (isLocked(m) && markerIn(m, delivered)) { delivered = stripMarkers(delivered); lockedMarker = true; }
       return {

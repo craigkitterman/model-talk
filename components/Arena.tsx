@@ -7,6 +7,7 @@ import { compact, usd } from "@/lib/cost";
 import { ProviderMark, Wordmark } from "./Logos";
 import type { VoiceCfg } from "@/lib/useMatch";
 import { SettingsButton } from "./Settings";
+import { Bot, Icon } from "./Icons";
 
 const KIND_LABEL: Record<Turn["kind"], string> = {
   model: "",
@@ -38,7 +39,7 @@ function SideMeter({ side, m, accent }: { side: Side; m: MatchState; accent: str
   return (
     <div className="flex-1 min-w-0">
       <div className="flex items-center gap-2 mb-1.5">
-        <span style={{ color: accent }}><ProviderMark p={spec.provider} size={13} /></span>
+        <Bot provider={spec.provider} size={18} color={accent} />
         <span className="uiFont text-[13px] font-extrabold tracking-[.06em] truncate" style={{ color: accent }}>{spec.name}</span>
         <span className="label truncate">as {lo.callsign}</span>
         <span className="flex-1" />
@@ -64,12 +65,13 @@ function Bubble({ t, accent, onFork }: { t: Turn; accent: string; onFork: () => 
     <div className={`flex ${right ? "justify-end" : "justify-start"} rise`}>
       <div className={`max-w-[78%] group ${right ? "items-end" : "items-start"} flex flex-col`}>
         <div className={`flex items-center gap-2 mb-1 ${right ? "flex-row-reverse" : ""}`}>
+          <Bot provider={byId(t.modelId)?.provider ?? "compat"} size={15} color={accent} />
           <span className="uiFont text-[12px] font-extrabold tracking-[.06em]" style={{ color: accent }}>{modelName}</span>
           <span className="label">as {t.callsign}</span>
           <span className="label">#{t.index}</span>
           {flag && <span className="label text-amber">{flag}</span>}
           {cost > 0 && <span className="label num">{usd(cost)}</span>}
-          <button onClick={onFork} aria-label={`Fork timeline at message ${t.index}`} className="label opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity hover:text-amber">fork ⑂</button>
+          <button onClick={onFork} aria-label={`Fork timeline at message ${t.index}`} className="label inline-flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity hover:text-amber"><Icon name="fork" size={12} />fork</button>
         </div>
         <div
           className={`plate hair px-5 py-4 text-[15px] leading-relaxed whitespace-pre-wrap ${
@@ -133,7 +135,7 @@ export default function Arena({
           <div className="flex items-center gap-3">
             <button onClick={onNew} title="Back to setup"
               className="clip-tab hair plate px-3 py-2 uiFont text-[12px] font-bold tracking-[.1em] text-dim hover:text-amber hover:border-edge-hot">
-              ◀ SETUP
+              <span className="inline-flex items-center gap-1.5"><Icon name="back" size={13} />SETUP</span>
             </button>
             <Wordmark />
           </div>
@@ -208,8 +210,8 @@ export default function Arena({
                 <div className="flex justify-center gap-2">
                   <button onClick={onNew} className="clip-tab uiFont text-[12px] font-extrabold tracking-[.14em] px-7 py-3 bg-amber text-void hover:brightness-110"
                     style={{ boxShadow: "0 0 44px -14px var(--color-amber)" }}>NEW MATCH</button>
-                  <button onClick={onTwin} className="clip-tab hair plate px-5 py-3 uiFont text-[12px] font-bold tracking-[.1em] text-dim hover:text-ink">TWIN RUN ⇄</button>
-                  <button onClick={() => onExport("md")} className="clip-tab hair plate px-5 py-3 uiFont text-[12px] font-bold tracking-[.1em] text-dim hover:text-ink">EXPORT</button>
+                  <button onClick={onTwin} className="clip-tab hair plate px-5 py-3 uiFont text-[12px] font-bold tracking-[.1em] text-dim hover:text-ink"><span className="inline-flex items-center gap-2"><Icon name="twin" size={14} />TWIN RUN</span></button>
+                  <button onClick={() => onExport("md")} className="clip-tab hair plate px-5 py-3 uiFont text-[12px] font-bold tracking-[.1em] text-dim hover:text-ink"><span className="inline-flex items-center gap-2"><Icon name="export" size={14} />EXPORT</span></button>
                 </div>
               </div>
             )}
@@ -222,7 +224,7 @@ export default function Arena({
         <aside className="border-l border-edge plate flex flex-col min-h-0 overflow-hidden">
           <div className="flex-1 overflow-y-auto p-4 space-y-5">
             <section>
-              <div className="label mb-2">telemetry</div>
+              <div className="label mb-2 inline-flex items-center gap-1.5"><Icon name="telemetry" size={13} />telemetry</div>
               <div className="space-y-1.5">
                 {[
                   ["tapped turns", `${stats.taps}`],
@@ -240,7 +242,7 @@ export default function Arena({
             </section>
 
             <section>
-              <div className="label mb-2">god mode inject</div>
+              <div className="label mb-2 inline-flex items-center gap-1.5"><Icon name="whisper" size={13} />god mode inject</div>
               <div className="flex gap-1 mb-2">
                 {(["A", "B"] as Side[]).map((s) => (
                   <button key={s} onClick={() => setInjTarget(s)}
@@ -256,7 +258,7 @@ export default function Arena({
                 onClick={() => { if (injText.trim()) { onInject(injTarget, injText.trim()); setInjText(""); } }}
                 disabled={!injText.trim()}
                 className="w-full mt-1.5 clip-tab hair py-2 uiFont text-[12px] font-bold tracking-[.1em] bg-hazard/10 border-hazard/40 text-hazard disabled:opacity-30">
-                WHISPER
+                <span className="inline-flex items-center gap-2"><Icon name="whisper" size={14} />WHISPER</span>
               </button>
               {m.injects.length > 0 && (
                 <div className="mt-2 space-y-1">
@@ -270,12 +272,12 @@ export default function Arena({
             </section>
 
             <section>
-              <div className="label mb-2">multiverse</div>
+              <div className="label mb-2 inline-flex items-center gap-1.5"><Icon name="fork" size={13} />multiverse</div>
               <p className="text-[12px] text-dim leading-snug mb-2">
                 Hover any message and hit <span className="text-amber">fork ⑂</span> to branch the timeline there. Twin run replays this match with the two loadouts swapped.
               </p>
               <button onClick={onTwin} className="w-full clip-tab hair plate py-2 uiFont text-[12px] font-bold tracking-[.1em] text-dim hover:text-ink hover:border-edge-hot">
-                TWIN RUN ⇄
+                <span className="inline-flex items-center gap-2"><Icon name="twin" size={14} />TWIN RUN</span>
               </button>
               {m.parentId && <div className="label mt-2 text-amber">branch · forked at #{m.forkedAtTurn}</div>}
             </section>
@@ -283,13 +285,13 @@ export default function Arena({
 
           <div className="shrink-0 border-t border-edge p-4 space-y-2">
             <div className="grid grid-cols-2 gap-2">
-              <button onClick={() => onExport("json")} className="clip-tab hair plate py-2 uiFont text-[12px] font-bold tracking-[.14em] text-dim hover:text-ink">JSON</button>
-              <button onClick={() => onExport("md")} className="clip-tab hair plate py-2 uiFont text-[12px] font-bold tracking-[.14em] text-dim hover:text-ink">MARKDOWN</button>
+              <button onClick={() => onExport("json")} className="clip-tab hair plate py-2 uiFont text-[12px] font-bold tracking-[.14em] text-dim hover:text-ink"><span className="inline-flex items-center gap-1.5"><Icon name="export" size={13} />JSON</span></button>
+              <button onClick={() => onExport("md")} className="clip-tab hair plate py-2 uiFont text-[12px] font-bold tracking-[.14em] text-dim hover:text-ink"><span className="inline-flex items-center gap-1.5"><Icon name="export" size={13} />MARKDOWN</span></button>
             </div>
             {running ? (
-              <button onClick={onStop} className="w-full clip-tab hair py-3 uiFont text-[12px] font-extrabold tracking-[.14em] bg-hazard/15 border-hazard/50 text-hazard">HALT</button>
+              <button onClick={onStop} className="w-full clip-tab hair py-3 uiFont text-[12px] font-extrabold tracking-[.14em] bg-hazard/15 border-hazard/50 text-hazard"><span className="inline-flex items-center gap-2"><Icon name="halt" size={13} />HALT</span></button>
             ) : status === "paused" ? (
-              <button onClick={onResume} className="w-full clip-tab py-3 uiFont text-[12px] font-extrabold tracking-[.14em] bg-amber text-void">RESUME</button>
+              <button onClick={onResume} className="w-full clip-tab py-3 uiFont text-[12px] font-extrabold tracking-[.14em] bg-amber text-void"><span className="inline-flex items-center gap-2"><Icon name="play" size={13} />RESUME</span></button>
             ) : null}
             <button onClick={onNew} className="w-full clip-tab hair plate py-2 uiFont text-[12px] font-bold tracking-[.1em] text-dim hover:text-ink">NEW MATCH</button>
           </div>

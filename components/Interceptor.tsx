@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { Draft } from "@/lib/useMatch";
 import { usd } from "@/lib/cost";
+import { Bot } from "./Icons";
+import type { ProviderId } from "@/lib/types";
 
 /**
  * The hero interaction, docked at the foot of the wire rather than over it:
@@ -10,13 +12,14 @@ import { usd } from "@/lib/cost";
  * conversation above it, then flies out to the receiver on approve.
  */
 export default function Interceptor({
-  draft, accentFrom, accentTo, callsignFrom, callsignTo, modelFrom, modelTo, awaitingHuman,
+  draft, accentFrom, accentTo, callsignFrom, callsignTo, modelFrom, modelTo, providerFrom, providerTo, awaitingHuman,
   onApprove, onReplace, onRegenerate, onCancel, micSupported,
 }: {
   draft: Draft;
   accentFrom: string; accentTo: string;
   callsignFrom: string; callsignTo: string;
   modelFrom: string; modelTo: string;
+  providerFrom: ProviderId; providerTo: ProviderId;
   awaitingHuman: boolean;
   onApprove: (text?: string) => void;
   onReplace: (text: string) => void;
@@ -78,9 +81,9 @@ export default function Interceptor({
 
           <div className="flex items-center justify-between px-4 py-2 border-b border-edge">
             <div className="flex items-center gap-2.5 min-w-0">
-              <span className="uiFont text-[12px] font-extrabold tracking-[.06em] shrink-0" style={{ color: accentFrom }}>{modelFrom} <span className="label">as {callsignFrom}</span></span>
+              <span className="inline-flex items-center gap-1.5 uiFont text-[12px] font-extrabold tracking-[.06em] shrink-0" style={{ color: accentFrom }}><Bot provider={providerFrom} size={16} color={accentFrom} />{modelFrom} <span className="label">as {callsignFrom}</span></span>
               <span className="text-faint text-[12px] shrink-0">──▶</span>
-              <span className="uiFont text-[12px] font-extrabold tracking-[.06em] shrink-0" style={{ color: accentTo }}>{modelTo} <span className="label">as {callsignTo}</span></span>
+              <span className="inline-flex items-center gap-1.5 uiFont text-[12px] font-extrabold tracking-[.06em] shrink-0" style={{ color: accentTo }}><Bot provider={providerTo} size={16} color={accentTo} />{modelTo} <span className="label">as {callsignTo}</span></span>
               <span className="label ml-2 truncate">
                 {awaitingHuman ? "your line · nothing sends until you do" : "held mid-wire · not yet delivered"}
               </span>

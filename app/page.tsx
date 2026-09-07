@@ -27,7 +27,7 @@ function sanitizeConfig(raw: unknown): MatchConfig {
       modelId: byId(modelId) ? modelId : dflt.modelId,
       callsign: str(o.callsign, dflt.callsign).slice(0, 14) || dflt.callsign,
       temperature: Math.min(2, Math.max(0, num(o.temperature, dflt.temperature))),
-      maxTokens: Math.min(8192, Math.max(64, num(o.maxTokens, dflt.maxTokens))),
+      maxTokens: Math.min(8192, Math.max(256, num(o.maxTokens, dflt.maxTokens))),
       persona: str(o.persona, ""),
       human: o.human === true,
     };
@@ -150,6 +150,8 @@ export default function Page() {
         callsignTo={d.side === "A" ? M.match.config.B.callsign : M.match.config.A.callsign}
         modelFrom={d.side === "A" ? nameA : nameB}
         modelTo={d.side === "A" ? nameB : nameA}
+        providerFrom={byId(d.side === "A" ? M.match.config.A.modelId : M.match.config.B.modelId)?.provider ?? "compat"}
+        providerTo={byId(d.side === "A" ? M.match.config.B.modelId : M.match.config.A.modelId)?.provider ?? "compat"}
         awaitingHuman={M.match.status === "awaiting-human"}
         onApprove={M.approve}
         onReplace={M.replaceWith}

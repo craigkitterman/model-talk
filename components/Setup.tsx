@@ -9,6 +9,7 @@ import { ProviderMark, Wordmark } from "./Logos";
 import { compact } from "@/lib/cost";
 import type { VoiceCfg } from "@/lib/useMatch";
 import { SettingsButton } from "./Settings";
+import { Bot, Icon, MODE_ICON, SCENARIO_ICON } from "./Icons";
 import { baseBrief, buildSystem } from "@/lib/prompt";
 
 interface Health { providers: Record<string, boolean>; voice: Record<string, boolean> }
@@ -83,8 +84,8 @@ function Fighter({
       <div className="label mb-4">callsign · the only name the <em>other model</em> ever sees. You always see the real model below.</div>
 
       <div className="flex items-center gap-3 mb-3">
-        <div className="shrink-0 grid place-items-center w-10 h-10 hair clip-tab" style={{ color: accent, background: "var(--color-deck)" }}>
-          <ProviderMark p={spec.provider} size={20} />
+        <div className="shrink-0 grid place-items-center w-12 h-12 hair" style={{ color: accent, background: "var(--color-deck)", boxShadow: `0 0 28px -10px ${accent}` }} title={prov.label}>
+          <Bot provider={spec.provider} size={30} color={accent} />
         </div>
         <select
           value={lo.modelId}
@@ -126,7 +127,7 @@ function Fighter({
 
       <div className="space-y-3 mb-4">
         <Dial label="temperature" value={lo.temperature} min={0} max={2} step={0.1} onChange={(n) => onChange({ ...lo, temperature: n })} />
-        <Dial label="max tokens" value={lo.maxTokens} min={128} max={4096} step={128} onChange={(n) => onChange({ ...lo, maxTokens: n })} />
+        <Dial label="max tokens" value={lo.maxTokens} min={256} max={8192} step={256} onChange={(n) => onChange({ ...lo, maxTokens: n })} />
       </div>
 
       <label className="block mb-3">
@@ -231,7 +232,7 @@ export default function Setup({
                 config.scenarioId === "custom" ? "bg-amber/15 border-amber/60 text-amber" : "plate text-dim hover:text-ink hover:border-edge-hot"
               }`}
             >
-              FREE-FORM ✎
+              <span className="inline-flex items-center gap-2"><Icon name="custom" size={15} />FREE-FORM</span>
             </button>
           </div>
           <div className="grid grid-cols-3 gap-2 mb-4">
@@ -244,7 +245,9 @@ export default function Setup({
                   className={`clip-tab hair text-left px-4 py-3 transition-all rise ${on ? "bg-amber/10 border-amber/70" : "plate hover:border-edge-hot"}`}
                   style={{ animationDelay: `${i * 35}ms` }}
                 >
-                  <div className={`uiFont text-[13px] font-bold tracking-[.12em] ${on ? "text-amber" : "text-ink/85"}`}>{s.name}</div>
+                  <div className={`flex items-center gap-2 uiFont text-[13px] font-bold tracking-[.12em] ${on ? "text-amber" : "text-ink/85"}`}>
+                    <Icon name={SCENARIO_ICON[s.id] ?? "custom"} size={17} />{s.name}
+                  </div>
                   <div className="text-[12px] text-dim mt-0.5 leading-snug">{s.tagline}</div>
                 </button>
               );
@@ -270,7 +273,7 @@ export default function Setup({
             <div className="mt-4 flex items-center justify-between gap-3">
               <button onClick={() => setShowBriefs((v) => !v)}
                 className={`clip-tab hair px-4 py-2 uiFont text-[12px] font-bold tracking-[.1em] ${showBriefs ? "bg-amber/10 border-amber/60 text-amber" : "plate text-dim hover:text-ink hover:border-edge-hot"}`}>
-                {showBriefs ? "HIDE EXACT BRIEFS" : "SHOW EXACT BRIEFS"}
+                <span className="inline-flex items-center gap-2"><Icon name="brief" size={15} />{showBriefs ? "HIDE EXACT BRIEFS" : "SHOW EXACT BRIEFS"}</span>
               </button>
               <span className="label text-right">what each side is told, verbatim, before the first message · includes persona, tap and voice overlays</span>
             </div>
@@ -392,7 +395,9 @@ export default function Setup({
                 return (
                   <button key={m.id} onClick={() => setConfig((c) => ({ ...c, mode: m.id }))}
                     className={`clip-tab hair px-4 py-3 text-left transition-all ${on ? "bg-amber/10 border-amber/70" : "plate hover:border-edge-hot"}`}>
-                    <div className={`uiFont text-[13px] font-bold tracking-[.1em] ${on ? "text-amber" : "text-ink/80"}`}>{m.name}</div>
+                    <div className={`flex items-center gap-2 uiFont text-[13px] font-bold tracking-[.1em] ${on ? "text-amber" : "text-ink/80"}`}>
+                      <Icon name={MODE_ICON[m.id]} size={17} />{m.name}
+                    </div>
                     <div className="text-[12px] text-dim mt-0.5 leading-snug">{m.blurb}</div>
                   </button>
                 );
@@ -450,7 +455,7 @@ export default function Setup({
               className={`clip-tab hair px-6 py-3 uiFont text-[13px] font-bold tracking-[.14em] shrink-0 ${
                 voice.on ? "bg-good/15 border-good/60 text-good" : "plate text-dim hover:border-edge-hot"
               }`}
-            >{voice.on ? "VOX ON" : "VOX OFF"}</button>
+            ><span className="inline-flex items-center gap-2"><Icon name="vox" size={16} />{voice.on ? "VOX ON" : "VOX OFF"}</span></button>
           </div>
           {voice.on && (
             <label className="flex items-center gap-2 mt-4 cursor-pointer">
@@ -466,7 +471,7 @@ export default function Setup({
                      bg-amber text-void hover:brightness-110 active:scale-[.995]"
           style={{ boxShadow: "0 0 80px -20px var(--color-amber)" }}
         >
-          OPEN CHANNEL
+          <span className="inline-flex items-center gap-3"><Icon name="play" size={18} />OPEN CHANNEL</span>
         </button>
       </div>
     </div>
