@@ -49,7 +49,7 @@ let summary = null; let stopped = null; let trials = 0; let done = 0;
 const t0 = Date.now();
 const handle = (ev) => {
   if (ev.type === "plan") { trials = ev.trials; console.log(`${manifest.name}: ${ev.trials} trials, stops at $${ev.maxCostUsd.toFixed(2)} (checked between requests) → ${outDir}`); }
-  else if (ev.type === "turn") { if (process.stdout.isTTY) process.stdout.write(`  trial #${ev.trial} ${ev.conditionId} · turn ${ev.index} (${ev.from}, ${ev.chars} chars)      `); }
+  else if (ev.type === "turn") { if (process.stdout.isTTY) process.stdout.write(`\r  trial #${ev.trial} ${ev.conditionId} · turn ${ev.index} (${ev.from}, ${ev.chars} chars)      `); }
   else if (ev.type === "trial") {
     done++;
     const r = ev.result; const m = r.metrics;
