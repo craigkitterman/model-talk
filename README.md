@@ -89,6 +89,18 @@ generation, it cannot claw back a request already in flight.
   `lib/voice/catalog.ts` is a placeholder — set it to your own effective rate.
 - Where a provider returns no usage on a stream, cost falls back to a character-count estimate and
   is flagged `estimated`.
+- **Reasoning tokens.** OpenAI counts them inside `completion_tokens`; xAI reports them alongside it.
+  The adapter folds them into billable output for xAI (a Grok turn can be 500 reasoning tokens
+  against 5 visible ones) and leaves OpenAI's total alone. Verified against both live APIs.
+- **Cached input tokens are charged at the full input rate.** Providers discount them; the meter does
+  not model cache tiers, so on a long match with heavy prefix reuse it reads *high*, not low.
+
+### Verified against live APIs
+
+Anthropic (Opus 5 / Sonnet 5 / Haiku 4.5), OpenAI (GPT-5.1 / 4.1 / 4o) and xAI (Grok 4 / Grok 3)
+adapters were each run end-to-end with real keys: streaming, usage reporting, and cost all check out.
+**Google Gemini is unverified** — no key was available at build time, so treat that adapter as
+untested code.
 
 ## Architecture
 

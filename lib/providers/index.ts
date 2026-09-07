@@ -88,7 +88,15 @@ async function* anthropicStream(req: GenerateRequest, signal: AbortSignal): Asyn
 }
 
 // ── OpenAI-compatible (OpenAI, xAI, custom endpoints) ────────────────────────
-interface CompatOpts { baseUrl: string; key: string; label: string; }
+interface CompatOpts {
+  baseUrl: string; key: string; label: string;
+  /**
+   * OpenAI's spec counts reasoning tokens INSIDE completion_tokens. xAI reports them
+   * alongside it, so folding them in twice (or not at all) misprices the match badly —
+   * a Grok turn can be 300 reasoning tokens against 5 visible ones.
+   */
+  reasoningInsideOutput: boolean;
+}
 
 async function* openAiCompatStream(
   req: GenerateRequest,
@@ -133,6 +141,11 @@ async function* openAiCompatStream(
       usage.cachedInputTokens = ev.usage.prompt_tokens_details?.cached_tokens ?? 0;
       usage.confidence = "reported";
     }
+  }
+  // Fold reasoning into billable output where the provider reports it separately.
+  // The `>` guard also catches a compat endpoint that lies about which convention it follows.
+  if (!opts.reasoningInsideOutput || usage.reasoningTokens > usage.outputTokens) {
+    usage.outputTokens += usage.reasoningTokens;
   }
   yield { type: "usage", usage };
   yield { type: "done", finish };
@@ -247,18 +260,24 @@ export function streamCompletion(req: GenerateRequest, signal: AbortSignal): Asy
     case "openai": {
       const key = process.env.OPENAI_API_KEY;
       if (!key) throw new Error("OPENAI_API_KEY is not set in .env.local");
-      return openAiCompatStream(req, { baseUrl: "https://api.openai.com/v1", key, label: "OpenAI" }, signal);
+      return openAiCompatStream(
+        req, { baseUrl: "https://api.openai.com/v1", key, label: "OpenAI", reasoningInsideOutput: true }, signal
+      );
     }
     case "xai": {
       const key = process.env.XAI_API_KEY;
       if (!key) throw new Error("XAI_API_KEY is not set in .env.local");
-      return openAiCompatStream(req, { baseUrl: "https://api.x.ai/v1", key, label: "xAI" }, signal);
+      return openAiCompatStream(
+        req, { baseUrl: "https://api.x.ai/v1", key, label: "xAI", reasoningInsideOutput: false }, signal
+      );
     }
     default: {
       const key = process.env.COMPAT_API_KEY;
       const baseUrl = req.compat?.baseUrl || process.env.COMPAT_BASE_URL;
       if (!baseUrl) throw new Error("COMPAT_BASE_URL is not set in .env.local");
-      return openAiCompatStream(req, { baseUrl, key: key ?? "none", label: "Compat" }, signal);
+      return openAiCompatStream(
+        req, { baseUrl, key: key ?? "none", label: "Compat", reasoningInsideOutput: true }, signal
+      );
     }
   }
 }
