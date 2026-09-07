@@ -31,10 +31,11 @@ const injectsBefore = (injects, index) =>
   (injects ?? []).filter((i) => i.afterTurn < index).map((i) => ({ to: i.target, after: i.afterTurn, text: i.text }));
 
 /** The fields that define a turn for provenance purposes. Order matters; do not reorder. */
-export function canonicalTurn(t, injects) {
+export function canonicalTurn(t, injects, legacy = false) {
   return JSON.stringify({
     i: t.index,
-    inj: injectsBefore(injects, t.index),
+    // chain v2 adds the injects in force; v1 runs (published before that) omit the field
+    ...(legacy ? {} : { inj: injectsBefore(injects, t.index) }),
     from: t.from,
     kind: t.kind,
     model: t.modelId,
@@ -59,11 +60,11 @@ export function canonicalTurn(t, injects) {
 export const GENESIS = "modeltalk-chain-v1";
 
 /** Returns the full chain: one hash per turn, in order. chain[i] depends on chain[i-1]. */
-export async function computeChain(turns, injects) {
+export async function computeChain(turns, injects, legacy = false) {
   const out = [];
   let prev = GENESIS;
   for (const t of turns) {
-    const h = await sha256Hex(prev + "\n" + canonicalTurn(t, injects));
+    const h = await sha256Hex(prev + "\n" + canonicalTurn(t, injects, legacy));
     out.push(h);
     prev = h;
   }
@@ -81,8 +82,11 @@ export async function nextHash(prevHash, turn, injects) {
  * Returns { status: "attested" | "unverified" | "tampered", detail, chain, matched, spanMs }.
  */
 export async function verify(run, commits, ledger) {
-  const chain = await computeChain(run.turns, run.injects);
-  const storedOk = Array.isArray(run.chain) && run.chain.length === chain.length && run.chain.every((h, i) => h === chain[i]);
+  // current scheme first; fall back to the legacy scheme for runs published before it
+  let chain = await computeChain(run.turns, run.injects);
+  const matches = (c) => Array.isArray(run.chain) && run.chain.length === c.length && run.chain.every((h, i) => h === c[i]);
+  let storedOk = matches(chain);
+  if (!storedOk) { const legacyChain = await computeChain(run.turns, run.injects, true); if (matches(legacyChain)) { chain = legacyChain; storedOk = true; } }
   if (!storedOk) {
     return { status: "tampered", detail: "The transcript does not hash to the chain stored with the run.", chain, matched: 0, spanMs: 0 };
   }
