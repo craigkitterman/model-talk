@@ -6,3 +6,4 @@ node_modules
 runs/
 
 .next-prod
+.firebase/
