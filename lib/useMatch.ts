@@ -191,7 +191,8 @@ export function useMatch() {
   /** Returns the matching end-marker source, or null. Ignores the lock. */
   const markerIn = useCallback((m: MatchState, text: string) => {
     const sc = scenarioById(m.config.scenarioId);
-    for (const re of sc.endsOn ?? []) if (re.test(text)) return re.source;
+    // report the marker as it appeared, e.g. "[[DEAL: 55 / 45]]", not the regex source
+    for (const re of sc.endsOn ?? []) { const m = text.match(re); if (m) return m[0]; }
     return null;
   }, []);
   const isLocked = useCallback((m: MatchState) => {
@@ -290,9 +291,11 @@ export function useMatch() {
         err = "the provider's safety classifier refused this request (stop_reason: refusal). Nothing was generated. That refusal is itself data — export the run — but to continue, soften the brief or swap models.";
       }
       if (!err && !delivered) {
-        err = spec?.reasoning && (u.reasoningTokens > 0 || finish === "length")
-          ? "the model spent its whole token budget reasoning and returned no visible text: raise max tokens for this side"
-          : "model returned an empty message";
+        err = tap && !text.replace(/<<<TAP[\s\S]*?TAP>>>/gi, "").trim()
+          ? "the model wrote only its private tap block and no visible message (its tap is shown below); RETRY usually fixes it"
+          : spec?.reasoning && (u.reasoningTokens > 0 || finish === "length")
+            ? "the model spent its whole token budget reasoning and returned no visible text: raise max tokens for this side"
+            : `model returned an empty message (finish: ${finish ?? "none"}, ${u.outputTokens} output tokens)`;
       }
       let lockedMarker = false;
       if (isLocked(m) && markerIn(m, delivered)) { delivered = stripMarkers(delivered); lockedMarker = true; }
@@ -333,7 +336,17 @@ export function useMatch() {
     [anchor, isLocked, markerIn, put]
   );
 
-  const endedBy = useCallback((m: MatchState, text: string) => (isLocked(m) ? null : markerIn(m, text)), [isLocked, markerIn]);
+  const endedBy = useCallback((m: MatchState, text: string) => {
+    if (isLocked(m)) return null;
+    const hit = markerIn(m, text);
+    if (!hit) return null;
+    const sc = scenarioById(m.config.scenarioId);
+    if (!sc.endsOnBoth) return hit;
+    // deals and charters need both parties: the previous turn (the other side) must carry a marker too
+    const prev = m.turns[m.turns.length - 2];
+    if (!prev || !markerIn(m, prev.delivered)) return null;
+    return `${markerIn(m, prev.delivered)} then ${hit}`;
+  }, [isLocked, markerIn]);
 
   const finishMatch = useCallback((m: MatchState, reason: string) => {
     put({ ...m, status: "done", endedReason: reason });
@@ -406,7 +419,7 @@ export function useMatch() {
           if (voiceRef.current.waitForAudio) await p;
         }
         const reason = endedBy(next, d.delivered);
-        if (reason) { finishMatch(matchRef.current, `end condition: ${reason}`); return; }
+        if (reason) { finishMatch(matchRef.current, `end condition reached: ${reason}`); return; }
         const wait = m.config.randomDelay
           ? Math.round(m.config.delayMinMs + Math.random() * Math.max(0, m.config.delayMaxMs - m.config.delayMinMs))
           : m.config.turnDelayMs;
@@ -444,6 +457,8 @@ export function useMatch() {
   /** Shared tail for approve / replace: deliver, speak, check end, continue. */
   const deliver = useCallback(
     async (d: Draft, text: string | undefined, kind: Turn["kind"]) => {
+      // recovering from an error (RETRY then APPROVE) must not leave "channel closed" on screen
+      if (matchRef.current.status === "error") put({ ...matchRef.current, status: "running", endedReason: undefined });
       const next = commit(d, text, kind);
       const spoken = text ?? d.delivered;
       if (voiceRef.current.on) {
@@ -451,7 +466,7 @@ export function useMatch() {
         if (voiceRef.current.waitForAudio) await p;
       }
       const reason = endedBy(next, spoken);
-      if (reason) { finishMatch(matchRef.current, `end condition: ${reason}`); return; }
+      if (reason) { finishMatch(matchRef.current, `end condition reached: ${reason}`); return; }
       void runLoop();
     },
     [commit, endedBy, finishMatch, runLoop, speak]
@@ -576,7 +591,8 @@ export function useMatch() {
     };
     setConfig(cfg);
     const m: MatchState = {
-      id: uid(), config: cfg,
+      // keep the original match id so a later publish still points at the live ledger
+      id: run.matchId || uid(), config: cfg,
       turns: run.turns, injects: run.injects ?? [], discarded: [],
       status: "paused", priceLock: run.priceLock ?? {},
       chain: run.chain ?? [], ledgerOpen: false,

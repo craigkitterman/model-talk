@@ -124,7 +124,7 @@ async function* openAiCompatStream(
 ): AsyncGenerator<StreamEvent> {
   const model = req.compat?.model ?? req.modelId;
   // Reasoning-family models reject `max_tokens` and non-default temperature on chat/completions.
-  const reasoningFamily = /^(gpt-5|o[1-9])/.test(model);
+  const reasoningFamily = /^(gpt-[5-9]|o[1-9])/.test(model);
   const body: Record<string, unknown> = {
     model,
     messages: [{ role: "system", content: req.system }, ...req.history],

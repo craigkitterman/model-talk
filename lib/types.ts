@@ -61,8 +61,10 @@ export interface Scenario {
   /** which side sends the seed */
   seedFrom: Side;
   defaultTurns: number;
-  /** turn index before which a [[VERDICT]] / [[COMMIT]] is rejected */
+  /** turn index before which any end marker ([[VERDICT]], [[DEAL]], [[SIGNED]]…) is stripped and ignored */
   lockUntil?: number;
+  /** an end marker only counts when BOTH sides have emitted one in consecutive turns (deals, charters) */
+  endsOnBoth?: boolean;
   /** enable the private scratchpad channel */
   thoughtTap: boolean;
   /** control-run description used by TWIN RUN */

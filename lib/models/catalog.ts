@@ -47,6 +47,12 @@ export const MODELS: ModelSpec[] = [
 
   // ── OpenAI ─────────────────────────────────────────────────────────────────
   {
+    id: "gpt-6-astra", provider: "openai", name: "GPT-6 Astra", family: "GPT-6",
+    inputPerM: 2.5, outputPerM: 15, contextWindow: 400_000, maxOutput: 128_000,
+    cutoff: "2026", released: "2026", reasoning: true, params: null, verified: false,
+    note: "Listed on your account by the API; pricing is a placeholder until confirmed.",
+  },
+  {
     id: "gpt-5.1", provider: "openai", name: "GPT-5.1", family: "GPT-5",
     inputPerM: 1.25, outputPerM: 10, contextWindow: 400_000, maxOutput: 128_000,
     cutoff: "2025", released: "2025", reasoning: true, params: null, verified: false,

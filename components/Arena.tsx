@@ -7,7 +7,9 @@ import { compact, usd } from "@/lib/cost";
 import { ProviderMark, Wordmark } from "./Logos";
 import type { VoiceCfg } from "@/lib/useMatch";
 import { SettingsButton } from "./Settings";
-import { Bot, Icon } from "./Icons";
+import { Bot, Icon, SCENARIO_ICON } from "./Icons";
+import { scenarioById } from "@/lib/scenarios";
+import { buildSystem } from "@/lib/prompt";
 
 const KIND_LABEL: Record<Turn["kind"], string> = {
   model: "",
@@ -111,6 +113,7 @@ export default function Arena({
 }) {
   const accentA = PROVIDERS[byId(m.config.A.modelId)?.provider ?? "compat"].color;
   const accentB = PROVIDERS[byId(m.config.B.modelId)?.provider ?? "compat"].color;
+  const scenario = scenarioById(m.config.scenarioId);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [injTarget, setInjTarget] = useState<Side>("A");
   const [injText, setInjText] = useState("");
@@ -231,6 +234,34 @@ export default function Arena({
         {/* OPS */}
         <aside className="border-l border-edge plate flex flex-col min-h-0 overflow-hidden">
           <div className="flex-1 overflow-y-auto p-4 space-y-5">
+            <section className="hair bg-deck/50 p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <Icon name={SCENARIO_ICON[m.config.scenarioId] ?? "custom"} size={15} className="text-amber" />
+                <span className="uiFont text-[12px] font-extrabold tracking-[.1em] text-amber">{scenario.name}</span>
+                <span className="label ml-auto">{m.config.mode}</span>
+              </div>
+              <p className="text-[12px] text-dim leading-snug">{scenario.brief}</p>
+              <div className="mt-2 space-y-1">
+                {(["A", "B"] as Side[]).map((side) => {
+                  const lo = side === "A" ? m.config.A : m.config.B;
+                  const accent = side === "A" ? accentA : accentB;
+                  const text = buildSystem(side, m.config, { turnCount: 0, injects: m.injects, voiceOn: voice.on });
+                  return (
+                    <details key={side} className="hair bg-panel/60 group/brief hover:border-edge-hot transition-colors">
+                      <summary className="cursor-pointer select-none px-2.5 py-2 text-[11px] uiFont font-bold tracking-[.06em] flex items-center gap-2 list-none [&::-webkit-details-marker]:hidden" style={{ color: accent }}>
+                        <span className="text-faint transition-transform group-open/brief:rotate-90" aria-hidden>▸</span>
+                        <Bot provider={byId(lo.modelId)?.provider ?? "compat"} size={13} color={accent} />
+                        <span className="underline decoration-dotted underline-offset-4 decoration-[color:var(--color-faint)]">what {byId(lo.modelId)?.name ?? lo.modelId} was told</span>
+                        <span className="label">as {lo.callsign}</span>
+                        <span className="label ml-auto text-amber group-open/brief:hidden">read →</span>
+                      </summary>
+                      <pre className="num text-[11px] leading-relaxed text-ink/80 whitespace-pre-wrap px-2.5 py-2 border-t border-edge max-h-[260px] overflow-y-auto m-0">{text}</pre>
+                    </details>
+                  );
+                })}
+              </div>
+              <div className="label mt-2">click a name to read its exact brief · the models never see each other&apos;s</div>
+            </section>
             <section>
               <div className="label mb-2 inline-flex items-center gap-1.5"><Icon name="telemetry" size={13} />telemetry</div>
               <div className="space-y-1.5">

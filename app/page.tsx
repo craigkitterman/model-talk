@@ -6,7 +6,7 @@ import Arena from "@/components/Arena";
 import Interceptor from "@/components/Interceptor";
 import Settings from "@/components/Settings";
 import Share from "@/components/Share";
-import { fetchRun, type PublishedRun } from "@/lib/community";
+import { buildRun, fetchRun, type PublishedRun } from "@/lib/community";
 import { DEFAULT_CONFIG, useMatch } from "@/lib/useMatch";
 import type { MatchConfig } from "@/lib/types";
 import { PROVIDERS, byId } from "@/lib/models/catalog";
@@ -108,7 +108,9 @@ export default function Page() {
       const sc = scenarioById(m.config.scenarioId);
       let blob: Blob, name: string;
       if (fmt === "json") {
-        blob = new Blob([JSON.stringify({ ...m, scenario: sc.name, voiceSpendUsd: M.voice.usd, exportedAt: new Date().toISOString() }, null, 2)], { type: "application/json" });
+        // same shape the community uses, so a file can be re-imported (and published) later
+        const run = { ...buildRun(m, M.spend, m.imported?.title ?? "", m.imported?.handle ?? null, M.voice.on), id: m.imported?.id, voiceSpendUsd: M.voice.usd, exportedAt: new Date().toISOString() };
+        blob = new Blob([JSON.stringify(run, null, 2)], { type: "application/json" });
         name = `modeltalk-${sc.id}-${m.id}.json`;
       } else {
         const lines = [

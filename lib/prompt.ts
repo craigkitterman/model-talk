@@ -17,7 +17,7 @@ export function buildSystem(
   const lo = side === "A" ? config.A : config.B;
   const parts = [base];
   if (lo.persona.trim()) parts.push(`PERSONA OVERLAY: ${lo.persona.trim()}`);
-  if (sc.lockUntil) parts.push(`Turn counter: you are on turn ${opts.turnCount + 1}. Verdicts are locked until turn ${sc.lockUntil}.`);
+  if (sc.lockUntil) parts.push(`Turn counter: you are on message ${opts.turnCount + 1}. End markers ([[...]]) are locked until message ${sc.lockUntil}; if you write one before then it is removed.`);
   if (opts.voiceOn) parts.push(VOICE_APPENDIX);
   if (sc.thoughtTap) parts.push(THOUGHT_TAP);
   // Injects live in the system prompt, keyed to message numbers, so a model's visible
