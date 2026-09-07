@@ -8,3 +8,5 @@ runs/
 .next-prod
 .firebase/
 .playwright-mcp/
+public/site-preview/
+docs/video/
