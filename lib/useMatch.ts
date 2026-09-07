@@ -38,6 +38,9 @@ export const DEFAULT_CONFIG: MatchConfig = {
   maxTurns: 20,
   budgetUsd: 1.0,
   turnDelayMs: 700,
+  randomDelay: false,
+  delayMinMs: 500,
+  delayMaxMs: 3000,
   A: { modelId: "claude-sonnet-5", callsign: "ORACLE", temperature: 1, maxTokens: 1024, persona: "", human: false },
   B: { modelId: "gpt-5.1", callsign: "MAGPIE", temperature: 1, maxTokens: 1024, persona: "", human: false },
 };
@@ -334,7 +337,10 @@ export function useMatch() {
         matchRef.current = { ...next, status: "done", endedReason: `end condition: ${reason}` };
         setMatch(matchRef.current); return;
       }
-      if (m.config.turnDelayMs) await new Promise((r) => setTimeout(r, m.config.turnDelayMs));
+      const wait = m.config.randomDelay
+        ? Math.round(m.config.delayMinMs + Math.random() * Math.max(0, m.config.delayMaxMs - m.config.delayMinMs))
+        : m.config.turnDelayMs;
+      if (wait > 0) await new Promise((r) => setTimeout(r, wait));
     }
     setMatch((s) => ({ ...s, status: "paused" }));
   }, [commit, endedBy, generate, spend, speak]);

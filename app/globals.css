@@ -34,8 +34,8 @@ html, body {
   content: "";
   position: fixed; inset: 0; z-index: 0; pointer-events: none;
   background-image:
-    linear-gradient(rgba(120, 150, 200, 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(120, 150, 200, 0.045) 1px, transparent 1px);
+    linear-gradient(var(--grid-line, rgba(120,150,200,0.045)) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line, rgba(120,150,200,0.045)) 1px, transparent 1px);
   background-size: 48px 48px;
   mask-image: radial-gradient(ellipse 120% 90% at 50% 40%, #000 20%, transparent 78%);
 }
@@ -43,7 +43,7 @@ html, body {
   content: "";
   position: fixed; inset: 0; z-index: 0; pointer-events: none;
   background: repeating-linear-gradient(0deg, rgba(255,255,255,0.018) 0 1px, transparent 1px 3px);
-  opacity: 0.6;
+  opacity: var(--scan-alpha, 0.6);
 }
 .grain {
   position: fixed; inset: -50%; z-index: 1; pointer-events: none; opacity: 0.035;
@@ -60,7 +60,11 @@ html, body {
 .clip-tab   { clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px)); }
 
 .hair { border: 1px solid var(--color-edge); }
-.plate { background: linear-gradient(160deg, #0d1421 0%, #080c14 100%); }
+.plate { background: linear-gradient(160deg, var(--plate-a, #0d1421) 0%, var(--plate-b, #080c14) 100%); }
+:root[data-theme="arctic"] .grain { opacity: 0.02; mix-blend-mode: multiply; }
+:root[data-theme="arctic"] ::-webkit-scrollbar-track { background: #e4eaf3 }
+:root[data-theme="arctic"] ::-webkit-scrollbar-thumb { background: #b8c6da; border-color: #e4eaf3 }
+html, body { transition: background-color .35s ease, color .35s ease; }
 
 .label {
   font-family: var(--font-ui);

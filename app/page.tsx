@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Setup from "@/components/Setup";
 import Arena from "@/components/Arena";
 import Interceptor from "@/components/Interceptor";
+import Settings from "@/components/Settings";
 import { useMatch } from "@/lib/useMatch";
 import { PROVIDERS, byId } from "@/lib/models/catalog";
 import { usd } from "@/lib/cost";
@@ -13,6 +14,7 @@ export default function Page() {
   const M = useMatch();
   const [phase, setPhase] = useState<"setup" | "arena">("setup");
   const [mic, setMic] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     setMic(typeof window !== "undefined" && !!((window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition));
@@ -71,9 +73,14 @@ export default function Page() {
     [M.match, M.spend.total, M.voice.usd]
   );
 
+  const settings = <Settings open={settingsOpen} onClose={() => setSettingsOpen(false)} />;
+
   if (phase === "setup") {
     return (
+      <>
+      {settings}
       <Setup
+        onSettings={() => setSettingsOpen(true)}
         config={M.config}
         setConfig={M.setConfig}
         scenario={M.scenario}
@@ -82,6 +89,7 @@ export default function Page() {
         setVoice={M.setVoice}
         onStart={() => { setPhase("arena"); M.start(); }}
       />
+      </>
     );
   }
 
@@ -107,7 +115,10 @@ export default function Page() {
     ) : null;
 
   return (
+    <>
+    {settings}
     <Arena
+      onSettings={() => setSettingsOpen(true)}
       m={M.match}
       live={M.live}
       spend={M.spend}
@@ -122,5 +133,6 @@ export default function Page() {
       onNew={() => { M.stop(); setPhase("setup"); }}
       dock={interceptor}
     />
+    </>
   );
 }

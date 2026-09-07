@@ -6,6 +6,7 @@ import { PROVIDERS, byId } from "@/lib/models/catalog";
 import { compact, usd } from "@/lib/cost";
 import { ProviderMark, Wordmark } from "./Logos";
 import type { VoiceCfg } from "@/lib/useMatch";
+import { SettingsButton } from "./Settings";
 
 const KIND_LABEL: Record<Turn["kind"], string> = {
   model: "",
@@ -88,8 +89,9 @@ function Bubble({ t, accent, onFork }: { t: Turn; accent: string; onFork: () => 
 }
 
 export default function Arena({
-  m, live, spend, voice, onStop, onResume, onInject, onFork, onTwin, onExport, onNew, status, dock,
+  m, live, spend, voice, onStop, onResume, onInject, onFork, onTwin, onExport, onNew, status, dock, onSettings,
 }: {
+  onSettings: () => void;
   m: MatchState;
   live: { side: Side; text: string } | null;
   spend: { a: number; b: number; total: number };
@@ -163,6 +165,7 @@ export default function Arena({
               running ? "text-amber border-amber/40" : "text-dim"}`}>
               {status}
             </span>
+            <SettingsButton onClick={onSettings} />
           </div>
         </div>
       </header>

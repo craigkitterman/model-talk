@@ -43,12 +43,35 @@ export function ProviderMark({ p, size = 22, color }: { p: ProviderId; size?: nu
   }
 }
 
+/**
+ * The mark: two angled brackets facing outward (two speakers) with the operator's
+ * gate bar between them. Reads as a pipe, a channel, and as "M|T".
+ * Left bracket is warm, right is cool (the two sides); the bar is the accent (you).
+ */
+export function Mark({ size = 22, mono = false }: { size?: number; mono?: boolean }) {
+  const warm = mono ? "currentColor" : "#D97757";
+  const cool = mono ? "currentColor" : "#3FE0A8";
+  const bar = mono ? "currentColor" : "var(--color-amber)";
+  return (
+    <svg viewBox="0 0 48 48" width={size} height={size} aria-label="Model Talk" role="img" style={{ display: "block" }}>
+      <path d="M19 9 L6 24 L19 39" fill="none" stroke={warm} strokeWidth="5.2" strokeLinecap="square" strokeLinejoin="miter" />
+      <path d="M29 9 L42 24 L29 39" fill="none" stroke={cool} strokeWidth="5.2" strokeLinecap="square" strokeLinejoin="miter" />
+      <rect x="21.6" y="14" width="4.8" height="20" fill={bar} />
+      <rect x="21.6" y="9" width="4.8" height="2.6" fill={bar} opacity=".45" />
+      <rect x="21.6" y="36.4" width="4.8" height="2.6" fill={bar} opacity=".45" />
+    </svg>
+  );
+}
+
 export function Wordmark() {
   return (
-    <div className="flex items-baseline gap-2 select-none">
-      <span className="disp text-[15px] text-ink">MODEL</span>
-      <span className="disp text-[15px] text-amber">TALK</span>
-      <span className="label ml-1 pt-[3px]">v0.2</span>
+    <div className="flex items-center gap-2.5 select-none">
+      <Mark size={22} />
+      <div className="flex items-baseline gap-2">
+        <span className="disp text-[15px] text-ink">MODEL</span>
+        <span className="disp text-[15px] text-amber">TALK</span>
+        <span className="label ml-1 pt-[3px]">v0.3</span>
+      </div>
     </div>
   );
 }

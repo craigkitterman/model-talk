@@ -8,6 +8,7 @@ import type { Scenario } from "@/lib/types";
 import { ProviderMark, Wordmark } from "./Logos";
 import { compact } from "@/lib/cost";
 import type { VoiceCfg } from "@/lib/useMatch";
+import { SettingsButton } from "./Settings";
 
 interface Health { providers: Record<string, boolean>; voice: Record<string, boolean> }
 
@@ -81,7 +82,7 @@ function Fighter({
       <div className="label mb-4">callsign · shown to the other side instead of the model name</div>
 
       <div className="flex items-center gap-3 mb-3">
-        <div className="shrink-0 grid place-items-center w-10 h-10 hair clip-tab" style={{ color: accent, background: "#0b111c" }}>
+        <div className="shrink-0 grid place-items-center w-10 h-10 hair clip-tab" style={{ color: accent, background: "var(--color-deck)" }}>
           <ProviderMark p={spec.provider} size={20} />
         </div>
         <select
@@ -166,8 +167,9 @@ function Fighter({
 }
 
 export default function Setup({
-  config, setConfig, scenario, scenarios, voice, setVoice, onStart,
+  config, setConfig, scenario, scenarios, voice, setVoice, onStart, onSettings,
 }: {
+  onSettings: () => void;
   config: MatchConfig;
   setConfig: (f: (c: MatchConfig) => MatchConfig) => void;
   scenario: Scenario;
@@ -192,10 +194,11 @@ export default function Setup({
           <div className="flex items-center gap-4">
             {health && Object.entries(health.providers).map(([k, v]) => (
               <span key={k} className="label flex items-center gap-1.5">
-                <i className="w-1.5 h-1.5 rounded-full" style={{ background: v ? "var(--color-good)" : "#2a3448" }} />
+                <i className="w-1.5 h-1.5 rounded-full" style={{ background: v ? "var(--color-good)" : "var(--color-edge-hot)" }} />
                 {k}
               </span>
             ))}
+            <SettingsButton onClick={onSettings} />
           </div>
         </header>
 
@@ -354,7 +357,22 @@ export default function Setup({
           <div className="plate hair clip-bevel p-5 space-y-4">
             <Dial label="message cap" value={config.maxTurns} min={2} max={60} step={1} onChange={(n) => setConfig((c) => ({ ...c, maxTurns: n }))} />
             <Dial label="budget ceiling" value={config.budgetUsd} min={0.05} max={20} step={0.05} onChange={(n) => setConfig((c) => ({ ...c, budgetUsd: n }))} suffix=" usd" />
-            <Dial label="turn delay" value={config.turnDelayMs} min={0} max={5000} step={100} onChange={(n) => setConfig((c) => ({ ...c, turnDelayMs: n }))} suffix="ms" />
+            {!config.randomDelay && (
+              <Dial label="turn delay" value={config.turnDelayMs} min={0} max={5000} step={100} onChange={(n) => setConfig((c) => ({ ...c, turnDelayMs: n }))} suffix="ms" />
+            )}
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={config.randomDelay}
+                onChange={(e) => setConfig((c) => ({ ...c, randomDelay: e.target.checked }))} className="accent-amber" />
+              <span className="label normal-case tracking-normal text-[11px] text-dim">Random delay between turns (bounded)</span>
+            </label>
+            {config.randomDelay && (
+              <div className="grid grid-cols-2 gap-3">
+                <Dial label="min" value={config.delayMinMs} min={0} max={10000} step={100}
+                  onChange={(n) => setConfig((c) => ({ ...c, delayMinMs: n, delayMaxMs: Math.max(n, c.delayMaxMs) }))} suffix="ms" />
+                <Dial label="max" value={config.delayMaxMs} min={0} max={15000} step={100}
+                  onChange={(n) => setConfig((c) => ({ ...c, delayMaxMs: n, delayMinMs: Math.min(n, c.delayMinMs) }))} suffix="ms" />
+              </div>
+            )}
           </div>
         </section>
 

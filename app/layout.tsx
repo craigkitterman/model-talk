@@ -14,7 +14,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${display.variable} ${ui.variable} ${body.variable} ${mono.variable}`}>
+    <html lang="en" className={`${display.variable} ${ui.variable} ${body.variable} ${mono.variable}`} suppressHydrationWarning>
+      <head>
+        {/* replays the saved theme's CSS vars before first paint; see public/theme-boot.js */}
+        <script src="/theme-boot.js" />
+      </head>
       <body className="field">
         <div className="grain" />
         <div className="relative z-10 h-screen">{children}</div>

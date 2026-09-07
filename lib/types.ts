@@ -130,6 +130,10 @@ export interface MatchConfig {
   maxTurns: number;
   budgetUsd: number;
   turnDelayMs: number;
+  /** Bounded random delay between turns, so AUTO runs feel less metronomic. */
+  randomDelay: boolean;
+  delayMinMs: number;
+  delayMaxMs: number;
   A: Loadout;
   B: Loadout;
   customA?: string;
