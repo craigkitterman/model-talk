@@ -69,12 +69,14 @@ h2 em,h1 em{font-style:normal;color:var(--amber)}
 
 /* ---------- nav ---------- */
 nav{position:sticky;top:0;z-index:20;background:rgba(5,7,12,.85);backdrop-filter:blur(8px);border-bottom:1px solid var(--edge)}
-nav .wrap{display:flex;align-items:center;justify-content:space-between;height:64px}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;gap:var(--s4);height:64px}
 .brand{display:flex;align-items:center;gap:12px;text-decoration:none}
-.brand span{font-family:var(--mark);font-size:14px;letter-spacing:.06em;color:var(--ink)}
+.brand span{font-family:var(--mark);font-size:14px;letter-spacing:.06em;color:var(--ink);white-space:nowrap}
 .brand span b{color:var(--amber);font-weight:400}
-nav ul{display:flex;gap:var(--s4);list-style:none;margin:0;padding:0}
-nav li a{text-decoration:none;font-family:var(--mt-font-ui);font-size:var(--mt-text-xs);font-weight:600;letter-spacing:var(--mt-tracking-label);text-transform:uppercase;color:var(--dim);transition:color var(--mt-dur-fast)}
+nav ul{display:flex;gap:var(--s3);list-style:none;margin:0;padding:0;flex-wrap:nowrap;min-width:0}
+nav li a{text-decoration:none;white-space:nowrap;font-family:var(--mt-font-ui);font-size:var(--mt-text-xs);font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);transition:color var(--mt-dur-fast)}
+nav .btn.sm{white-space:nowrap}
+@media (max-width:1380px){nav li.opt{display:none}}
 nav li a:hover{color:var(--ink)}
 
 /* ---------- buttons ---------- */
@@ -264,10 +266,10 @@ footer a:hover{color:var(--amber)}
       <li><a href="community/">Community</a></li>
       <li><a href="#happened">What happened</a></li>
       <li><a href="#how">How it works</a></li>
-      <li><a href="#scenarios">Scenarios</a></li>
-      <li><a href="#tap">Thought tap</a></li>
+      <li class="opt"><a href="#scenarios">Scenarios</a></li>
+      <li class="opt"><a href="#tap">Thought tap</a></li>
       <li><a href="#experiments">Experiments</a></li>
-      <li><a href="#sharing">Sharing</a></li>
+      <li class="opt"><a href="#sharing">Sharing</a></li>
       <li><a href="#run">Run it</a></li>
     </ul>
     <a class="btn ghost sm" href="https://github.com/craigkitterman/model-talk">GitHub</a>
