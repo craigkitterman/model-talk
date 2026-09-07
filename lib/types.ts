@@ -56,6 +56,8 @@ export interface Scenario {
   sideA: ScenarioSide;
   sideB: ScenarioSide;
   seed: string;
+  /** Suggested opening lines, offered in a dropdown and fully editable. seed === openers[0]. */
+  openers: string[];
   /** which side sends the seed */
   seedFrom: Side;
   defaultTurns: number;

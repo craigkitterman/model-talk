@@ -182,6 +182,7 @@ export default function Setup({
   const accentA = PROVIDERS[byId(config.A.modelId)!.provider].color;
   const accentB = PROVIDERS[byId(config.B.modelId)!.provider].color;
   const anyKey = health ? Object.values(health.providers).some(Boolean) : true;
+  const seedText = config.customSeed ?? scenario.seed;
 
   return (
     <div className="h-full overflow-y-auto">
@@ -206,14 +207,31 @@ export default function Setup({
 
         {/* Scenario */}
         <section className="mb-8">
-          <div className="label mb-3">Scenario</div>
+          <div className="flex items-end justify-between mb-3 gap-6">
+            <div>
+              <div className="label">Scenario</div>
+              <p className="text-[12.5px] text-dim leading-snug mt-1 max-w-[86ch]">
+                A scenario is a template for an interesting conversation: a hidden brief for each side, an opening
+                line, and a condition that ends the match. The two models never see each other&apos;s brief. Pick one
+                to probe a specific behaviour, or go free-form and write both briefs yourself.
+              </p>
+            </div>
+            <button
+              onClick={() => setConfig((c) => ({ ...c, scenarioId: "custom", maxTurns: 20, customSeed: "" }))}
+              className={`shrink-0 clip-tab hair px-5 py-2.5 uiFont text-[11px] font-bold tracking-[.16em] ${
+                config.scenarioId === "custom" ? "bg-amber/15 border-amber/60 text-amber" : "plate text-dim hover:text-ink hover:border-edge-hot"
+              }`}
+            >
+              FREE-FORM ✎
+            </button>
+          </div>
           <div className="grid grid-cols-3 gap-2 mb-4">
             {scenarios.map((s, i) => {
               const on = s.id === config.scenarioId;
               return (
                 <button
                   key={s.id}
-                  onClick={() => setConfig((c) => ({ ...c, scenarioId: s.id, maxTurns: s.defaultTurns }))}
+                  onClick={() => setConfig((c) => ({ ...c, scenarioId: s.id, maxTurns: s.defaultTurns, customSeed: s.seed }))}
                   className={`clip-tab hair text-left px-4 py-3 transition-all rise ${on ? "bg-amber/10 border-amber/70" : "plate hover:border-edge-hot"}`}
                   style={{ animationDelay: `${i * 35}ms` }}
                 >
@@ -240,19 +258,47 @@ export default function Setup({
             )}
             {scenario.id === "custom" && (
               <div className="grid grid-cols-2 gap-3 mt-4">
-                <textarea rows={5} placeholder="System prompt — side A"
+                <textarea rows={5} placeholder={`Hidden brief for ${config.A.callsign} (side A) — who they are, what they want, what they must not say`}
                   value={config.customA ?? ""} onChange={(e) => setConfig((c) => ({ ...c, customA: e.target.value }))}
                   className="bg-deck hair px-3 py-2 text-[12px] outline-none resize-none placeholder:text-faint" />
-                <textarea rows={5} placeholder="System prompt — side B"
+                <textarea rows={5} placeholder={`Hidden brief for ${config.B.callsign} (side B) — the other side never sees this`}
                   value={config.customB ?? ""} onChange={(e) => setConfig((c) => ({ ...c, customB: e.target.value }))}
                   className="bg-deck hair px-3 py-2 text-[12px] outline-none resize-none placeholder:text-faint" />
               </div>
             )}
-            <input
-              value={config.customSeed ?? ""} onChange={(e) => setConfig((c) => ({ ...c, customSeed: e.target.value }))}
-              placeholder={`Opening line (from ${scenario.seedFrom}) — default: “${scenario.seed.slice(0, 70)}…”`}
-              className="w-full mt-3 bg-deck hair px-3 py-2 text-[12px] outline-none placeholder:text-faint"
-            />
+            <div className="mt-4 hair clip-tab bg-deck/60 p-3">
+              <div className="flex items-center justify-between mb-2 gap-3">
+                <span className="label">
+                  opening line · sent as {scenario.seedFrom === "A" ? config.A.callsign : config.B.callsign}&apos;s first message
+                </span>
+                <button
+                  onClick={() => setConfig((c) => ({ ...c, customSeed: "" }))}
+                  className="label hover:text-amber"
+                >clear</button>
+              </div>
+              <select
+                value={scenario.openers.includes(seedText) ? seedText : "__own__"}
+                onChange={(e) => { if (e.target.value !== "__own__") setConfig((c) => ({ ...c, customSeed: e.target.value })); }}
+                className="uiFont w-full bg-panel hair px-2.5 py-2 text-[12px] outline-none cursor-pointer mb-2"
+                aria-label="Suggested opening lines"
+              >
+                {scenario.openers.map((o, i) => (
+                  <option key={i} value={o}>{i === 0 ? "★ " : ""}{o.length > 96 ? o.slice(0, 96) + "…" : o}</option>
+                ))}
+                <option value="__own__">✎ Write my own…</option>
+              </select>
+              <textarea
+                value={seedText}
+                onChange={(e) => setConfig((c) => ({ ...c, customSeed: e.target.value }))}
+                rows={2}
+                placeholder="Type the opening line yourself, or pick one above."
+                className="w-full bg-panel hair px-3 py-2 text-[12.5px] leading-relaxed outline-none resize-none
+                           placeholder:text-faint focus:border-amber/60"
+              />
+              <div className="label mt-1.5">
+                Edit it freely — whatever is in this box is exactly what gets sent.
+              </div>
+            </div>
           </div>
         </section>
 
