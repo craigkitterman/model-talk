@@ -9,7 +9,7 @@ import { createWithServerTime, getDoc, listCollection } from "./db";
 // Plain ESM shared with the site so both sides hash identically.
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore — untyped shared module
-import { computeChain, nextHash, scanForSecrets, verify } from "@/shared/chain.mjs";
+import { computeChain, envelopeHash, nextHash, scanForSecrets, verify } from "@/shared/chain.mjs";
 
 export type { Turn };
 
@@ -41,10 +41,15 @@ export interface PublishedRun {
 
 // ── live ledger ───────────────────────────────────────────────────────────────
 /** Open the ledger for a match. Fire-and-forget; failure just means "unverified". */
-export async function openLedger(m: MatchState): Promise<boolean> {
+export async function openLedger(m: MatchState, voiceOn: boolean): Promise<boolean> {
   if (!COMMUNITY.enabled) return false;
   try {
-    await createWithServerTime(`ledger/${m.id}`, { scenarioId: m.config.scenarioId, createdAt: null }, "createdAt");
+    const briefs = {
+      A: buildSystem("A", m.config, { turnCount: 0, injects: [], voiceOn }),
+      B: buildSystem("B", m.config, { turnCount: 0, injects: [], voiceOn }),
+    };
+    const envelope: string = await envelopeHash({ ...m.config, briefs });
+    await createWithServerTime(`ledger/${m.id}`, { scenarioId: m.config.scenarioId, envelope, createdAt: null }, "createdAt");
     return true;
   } catch (e) {
     console.warn("ledger open failed", e);
@@ -54,13 +59,23 @@ export async function openLedger(m: MatchState): Promise<boolean> {
 
 /** Append one turn's hash. Returns the hash so the caller can store the chain. */
 export async function commitTurn(m: MatchState, turn: Turn, prevHash: string | null): Promise<string> {
-  const hash: string = await nextHash(prevHash, turn);
+  const hash: string = await nextHash(prevHash, turn, m.injects);
   if (COMMUNITY.enabled && m.ledgerOpen) {
-    createWithServerTime(`ledger/${m.id}/commits/${turn.index}`, { turnIndex: turn.index, hash, at: null }, "at").catch((e) =>
+    // awaited, so commits reach the ledger in order; the caller serialises per match
+    await createWithServerTime(`ledger/${m.id}/commits/${turn.index}`, { turnIndex: turn.index, hash, at: null }, "at").catch((e) =>
       console.warn("ledger commit failed", e)
     );
   }
   return hash;
+}
+
+/** Terminal record: how many turns the match really had, and its head. Cutting the ending later shows. */
+export async function sealLedger(m: MatchState): Promise<void> {
+  if (!COMMUNITY.enabled || !m.ledgerOpen || !m.chain?.length) return;
+  const head = m.chain[m.chain.length - 1];
+  await createWithServerTime(`ledger/${m.id}/commits/-1`, { turnIndex: -1, hash: head, count: m.turns.length, at: null }, "at").catch((e) =>
+    console.warn("ledger seal failed", e)
+  );
 }
 
 // ── publish ───────────────────────────────────────────────────────────────────
@@ -86,7 +101,8 @@ export function buildRun(m: MatchState, spend: PublishedRun["spend"], title: str
       A: buildSystem("A", m.config, { turnCount: 0, injects: [], voiceOn }),
       B: buildSystem("B", m.config, { turnCount: 0, injects: [], voiceOn }),
     },
-    turns: m.turns,
+    // original text of edited or rerolled generations is NOT published; only what was delivered
+    turns: m.turns.map((t) => ({ ...t, attempts: t.attempts.map(({ raw: _raw, ...a }) => a) })),
     injects: m.injects,
     priceLock: m.priceLock,
     spend,
@@ -102,7 +118,7 @@ export interface PublishResult { id: string; url: string }
 export async function publishRun(run: PublishedRun): Promise<PublishResult> {
   if (!COMMUNITY.enabled) throw new Error("community sharing is disabled (NEXT_PUBLIC_COMMUNITY=off)");
   // Recompute the chain from what we are about to send; never trust the in-memory copy blindly.
-  const chain: string[] = await computeChain(run.turns);
+  const chain: string[] = await computeChain(run.turns, run.injects);
   const findings = scanForSecrets(run) as { where: string; what: string }[];
   if (findings.length) {
     throw new Error("Refusing to publish: " + findings.map((f) => `${f.what} in ${f.where}`).join("; ") + ". Edit or kill those messages first.");
@@ -121,5 +137,6 @@ export async function fetchRun(id: string): Promise<PublishedRun | null> {
 
 export async function fetchVerification(run: PublishedRun) {
   const commits = await listCollection(`ledger/${run.matchId}/commits`).catch(() => []);
-  return verify(run, commits) as Promise<{ status: "attested" | "partial" | "unverified" | "tampered"; detail: string; matched: number; spanMs: number }>;
+  const ledger = await getDoc(`ledger/${run.matchId}`).catch(() => null);
+  return verify(run, commits, ledger) as Promise<{ status: "attested" | "partial" | "unverified" | "tampered" | "derivative"; detail: string; matched: number; spanMs: number }>;
 }

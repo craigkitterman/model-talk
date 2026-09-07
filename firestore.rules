@@ -12,11 +12,25 @@ service cloud.firestore {
     // ── Community runs: create-only, readable by anyone unless hidden ──────
     match /runs/{runId} {
       allow get: if resource.data.hidden == false;
-      allow list: if request.query.limit <= 60;
+      allow list: if request.query.limit <= 60 && resource.data.hidden == false;
       allow create: if signedIn()
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.v == 1
         && request.resource.data.hidden == false
+        // a run may only claim a ledger that this same account anchored
+        && (!exists(/databases/$(database)/documents/ledger/$(request.resource.data.matchId))
+            || get(/databases/$(database)/documents/ledger/$(request.resource.data.matchId)).data.uid == request.auth.uid)
+        && request.resource.data.models is map
+        && request.resource.data.models.A is map && request.resource.data.models.B is map
+        && isStr(request.resource.data.models.A.name, 80) && isStr(request.resource.data.models.B.name, 80)
+        && isStr(request.resource.data.models.A.id, 80) && isStr(request.resource.data.models.B.id, 80)
+        && isStr(request.resource.data.models.A.provider, 20) && isStr(request.resource.data.models.B.provider, 20)
+        && isStr(request.resource.data.models.A.callsign, 14) && isStr(request.resource.data.models.B.callsign, 14)
+        && isStr(request.resource.data.scenarioName, 64)
+        && isStr(request.resource.data.mode, 16)
+        && request.resource.data.spend is map
+        && request.resource.data.briefs is map
+        && request.resource.data.injects is list
         && request.resource.data.createdAt == request.time
         && isStr(request.resource.data.title, 140)
         && isStr(request.resource.data.scenarioId, 64)
@@ -32,8 +46,9 @@ service cloud.firestore {
 
       // ── Votes: one doc per signed-in (non-anonymous) user, id == uid ─────
       match /votes/{uid} {
-        allow get, list: if true;
+        allow get, list: if request.query.limit <= 500 || request.query.limit == null;
         allow create, update: if realUser() && uid == request.auth.uid
+          && get(/databases/$(database)/documents/runs/$(runId)).data.hidden == false
           && request.resource.data.uid == request.auth.uid
           && (request.resource.data.value == 1 || request.resource.data.value == -1)
           && request.resource.data.at == request.time;
@@ -42,8 +57,10 @@ service cloud.firestore {
 
       // ── Comments: signed-in (Google/GitHub) only; author may delete ──────
       match /comments/{cid} {
-        allow get, list: if request.query.limit <= 200 || true;
+        allow get: if true;
+        allow list: if request.query.limit <= 200;
         allow create: if realUser()
+          && get(/databases/$(database)/documents/runs/$(runId)).data.hidden == false
           && request.resource.data.uid == request.auth.uid
           && isStr(request.resource.data.text, 2000)
           && request.resource.data.text.size() >= 1
@@ -62,7 +79,8 @@ service cloud.firestore {
       allow create: if signedIn()
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.createdAt == request.time
-        && isStr(request.resource.data.scenarioId, 64);
+        && isStr(request.resource.data.scenarioId, 64)
+        && isStr(request.resource.data.envelope, 64) && request.resource.data.envelope.size() == 64;
       allow update, delete: if false;
 
       match /commits/{turnIndex} {
@@ -73,6 +91,7 @@ service cloud.firestore {
           && request.resource.data.at == request.time
           && request.resource.data.turnIndex is int
           && string(request.resource.data.turnIndex) == turnIndex
+          && (request.resource.data.turnIndex >= 0 || (request.resource.data.turnIndex == -1 && request.resource.data.count is int))
           && isStr(request.resource.data.hash, 64)
           && request.resource.data.hash.size() == 64;
         allow update, delete: if false;

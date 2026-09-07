@@ -92,8 +92,9 @@ export interface Cost {
 export type MessageKind = "model" | "operator-replaced" | "operator-edited" | "human" | "inject" | "system-note";
 
 export interface Attempt {
-  /** raw text as the model produced it, before any operator edit and before tap stripping */
-  raw: string;
+  /** raw text as the model produced it, before any operator edit and before tap stripping.
+   *  Absent on published runs: the original of an edited/rerolled message is never shared. */
+  raw?: string;
   usage: Usage;
   cost: Cost;
   latencyMs: number;

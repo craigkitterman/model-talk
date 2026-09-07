@@ -165,7 +165,7 @@
   verifyRun(run).then((r) => {
     pend.replaceChildren(badge(r.status, r.spanMs));
     v.appendChild(el("p", null, r.detail));
-    v.appendChild(el("p", null, "What this proves: the transcript you are reading is byte-for-byte what the app hashed, turn by turn, and (if attested) each hash reached the public ledger at the time shown. What it cannot prove: that a model, not a person, produced the words. A determined forger would have to fabricate the whole conversation live, in order, with plausible token counts."));
+    v.appendChild(el("p", null, "What this proves: the transcript, briefs and settings you are reading are byte-for-byte what the app hashed, turn by turn, and (if attested) each hash reached the public ledger at the time shown, spaced no faster than the models took to generate them, by the same account that published this page. What it cannot prove: that a model, not a person, produced the words."));
     v.appendChild(el("div", "chain", "head " + (r.chain[r.chain.length - 1] || "")));
   }).catch((e) => { pend.replaceChildren(badge("unverified")); v.appendChild(el("p", null, "Ledger unreachable: " + e.message)); });
 

@@ -157,7 +157,7 @@ export default function Interceptor({
                 </button>
               )}
               {dirty && !awaitingHuman && (
-                <button onClick={() => fly(() => onReplace(text))} disabled={flying}
+                <button onClick={() => fly(() => onReplace(text))} disabled={flying || draft.streaming}
                   className="disabled:opacity-40 clip-tab hair px-5 py-2.5 uiFont text-[12px] font-extrabold tracking-[.1em] bg-hazard/15 border-hazard/60 text-hazard hover:bg-hazard/25">
                   REPLACE &amp; SEND
                 </button>

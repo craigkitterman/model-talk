@@ -43,7 +43,7 @@ const toMs = (v) => (v && typeof v.toMillis === "function" ? v.toMillis() : type
 // ── data ─────────────────────────────────────────────────────────────────────
 export async function listRuns(limit = 60) {
   const snap = await db.collection("runs").where("hidden", "==", false).orderBy("createdAt", "desc").limit(limit).get();
-  return snap.docs.map((d) => ({ id: d.id, ...d.data(), createdAt: toMs(d.data().createdAt) }));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data(), createdAt: toMs(d.data().createdAt) })).filter(isWellFormed);
 }
 export async function getRun(id) {
   const d = await db.collection("runs").doc(id).get();
@@ -52,7 +52,11 @@ export async function getRun(id) {
 }
 export async function getCommits(matchId) {
   const snap = await db.collection("ledger").doc(matchId).collection("commits").get();
-  return snap.docs.map((d) => { const x = d.data(); return { turnIndex: x.turnIndex, hash: x.hash, at: toMs(x.at) }; });
+  return snap.docs.map((d) => { const x = d.data(); return { turnIndex: x.turnIndex, hash: x.hash, at: toMs(x.at), count: x.count }; });
+}
+export async function getLedger(matchId) {
+  const d = await db.collection("ledger").doc(matchId).get();
+  return d.exists ? d.data() : null;
 }
 /** Attach vote counts to each run (parallel). */
 export async function withVotes(runs) {
@@ -100,18 +104,23 @@ export const onAuth = (cb) => auth.onAuthStateChanged(cb);
 // ── verification ─────────────────────────────────────────────────────────────
 export async function verifyRun(run) {
   const commits = await getCommits(run.matchId).catch(() => []);
-  return verify(run, commits);
+  const ledger = await getLedger(run.matchId).catch(() => null);
+  return verify(run, commits, ledger);
 }
 export function badge(status, spanMs) {
   const b = el("span", `badge ${status}`);
-  const label = { attested: "Attested", partial: "Partially anchored", unverified: "Unverified", tampered: "Tampered", pending: "Checking" }[status] || status;
+  const label = { attested: "Attested", partial: "Partially anchored", unverified: "Unverified", tampered: "Tampered", derivative: "Re-upload", pending: "Checking" }[status] || status;
   b.appendChild(icon(status === "attested" ? "the-vault" : status === "tampered" ? "confessional" : "telemetry", 12));
   b.appendChild(document.createTextNode(label + (status === "attested" && spanMs ? ` · ${fmtSpan(spanMs)} live` : "")));
   return b;
 }
 
 // ── run card (shared by list and related) ────────────────────────────────────
+export function isWellFormed(run) {
+  return !!(run && run.models && run.models.A && run.models.B && typeof run.title === "string" && Array.isArray(run.turns) && run.turns.length >= 2);
+}
 export function runCard(run, base = "../") {
+  if (!isWellFormed(run)) return el("div", "panel run", "(malformed run skipped)");
   const a = el("a", "panel run"); a.href = `${base}run/?id=${encodeURIComponent(run.id)}`;
   const vs = el("div", "vs");
   const sideEl = (m, cls) => {

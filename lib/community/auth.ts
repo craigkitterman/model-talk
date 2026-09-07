@@ -9,7 +9,8 @@ import { COMMUNITY, endpoints } from "./config";
  */
 interface Session { uid: string; idToken: string; refreshToken: string; expiresAt: number }
 
-const KEY = "modeltalk:community-session";
+// keyed by environment so an emulator session can never be replayed against production
+const KEY = `modeltalk:community-session:${COMMUNITY.emulator ? "emu" : COMMUNITY.projectId}`;
 
 function load(): Session | null {
   try { const raw = localStorage.getItem(KEY); return raw ? (JSON.parse(raw) as Session) : null; } catch { return null; }
@@ -38,6 +39,9 @@ async function refresh(s: Session): Promise<Session> {
 }
 
 let inflight: Promise<Session> | null = null;
+
+/** Drop the cached session (e.g. after a 401/403) so the next call signs in fresh. */
+export function resetSession() { save(null); }
 
 export async function session(): Promise<Session> {
   if (inflight) return inflight;

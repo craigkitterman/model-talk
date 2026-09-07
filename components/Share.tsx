@@ -101,14 +101,14 @@ export default function Share({
                     <li>· scenario, mode, budget, end reason</li>
                     <li>· the provenance chain ({run.chain.length} hashes)</li>
                   </ul>
-                  <div className="label mt-3 text-good">not published: api keys, your name, email, machine, ip, or anything outside this match · {(bytes / 1024).toFixed(0)} kb</div>
+                  <div className="label mt-3 text-good">not published: api keys, your name, email, machine, ip, the original text of any message you edited or rerolled, or anything outside this match · {(bytes / 1024).toFixed(0)} kb</div>
                 </div>
 
                 <div className={`hair p-3 text-[13px] ${anchored ? "border-good/40 bg-good/[.04] text-good" : "border-amber/40 bg-amber/[.04] text-amber"}`}>
                   {anchored
                     ? "Every turn of this run was anchored in the live ledger as it happened. It will show as ATTESTED."
                     : m.imported
-                      ? "This is an imported run; only the turns you generated after forking were anchored live. It will show as FORKED / UNVERIFIED."
+                      ? "This is an imported run. If you originally ran it, its ledger is yours and it will verify normally; if someone else did, it will show as RE-UPLOAD."
                       : "The live ledger was not reachable for this run (offline, or community disabled). It will show as UNVERIFIED: internally consistent, but not anchored while it happened."}
                 </div>
 

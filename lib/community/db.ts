@@ -1,7 +1,7 @@
 "use client";
 
 import { endpoints } from "./config";
-import { session } from "./auth";
+import { resetSession, session } from "./auth";
 
 /** Minimal Firestore REST encoder/decoder. Enough for our documents; no SDK weight. */
 type FsValue =
@@ -51,7 +51,7 @@ async function authed(): Promise<{ uid: string; headers: Record<string, string> 
  * with a REQUEST_TIME transform so firestore.rules can insist `field == request.time`.
  * `currentDocument.exists=false` makes it create-only: a second write fails, never overwrites.
  */
-export async function createWithServerTime(path: string, data: Record<string, unknown>, timeField: string) {
+export async function createWithServerTime(path: string, data: Record<string, unknown>, timeField: string, retry = true): Promise<{ uid: string }> {
   const { uid, headers } = await authed();
   const base = endpoints().firestore;
   // Firestore wants the resource name, not a URL: projects/{p}/databases/(default)/documents/{path}
@@ -67,6 +67,11 @@ export async function createWithServerTime(path: string, data: Record<string, un
       }],
     }),
   });
+  if ((res.status === 401 || res.status === 403) && retry) {
+    // stale or foreign token: sign in again once and retry
+    resetSession();
+    return createWithServerTime(path, data, timeField, false);
+  }
   if (!res.ok) throw new Error(`firestore ${res.status}: ${(await res.text()).slice(0, 300)}`);
   return { uid };
 }

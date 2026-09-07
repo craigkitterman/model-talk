@@ -10,7 +10,7 @@ import { buildSystem } from "@/lib/prompt";
 import { computeCost, estimateUsage } from "@/lib/cost";
 import { forSpeech, splitTap } from "@/lib/tap";
 import { DEFAULT_VOICE_A, DEFAULT_VOICE_B, voiceById } from "@/lib/voice/catalog";
-import { commitTurn, openLedger, type PublishedRun } from "@/lib/community";
+import { commitTurn, openLedger, sealLedger, type PublishedRun } from "@/lib/community";
 
 export interface Draft {
   side: Side;
@@ -91,8 +91,12 @@ export function useMatch() {
   /** resolves once the ledger doc for the current match exists (or failed); commits wait on it */
   const ledgerRef = useRef<{ id: string; ready: Promise<boolean> } | null>(null);
   const stopRef = useRef(false);
-  /** true while runLoop is executing; a second caller becomes a no-op */
-  const loopRef = useRef(false);
+  /** id of the match whose loop is executing; a second loop for the same match is a no-op */
+  const loopRef = useRef<string | null>(null);
+  /** per-match promise chain so hashes and commits are computed strictly in turn order */
+  const anchorQueueRef = useRef<{ id: string; tail: Promise<void> }>({ id: "", tail: Promise.resolve() });
+  /** resolves the in-flight audio wait when HALT interrupts playback */
+  const audioDoneRef = useRef<(() => void) | null>(null);
   /** the draft currently owned by the interceptor; operator actions must match it */
   const draftRef = useRef<Draft | null>(null);
   const matchRef = useRef(match);
@@ -105,18 +109,26 @@ export function useMatch() {
   const put = useCallback((m: MatchState) => { matchRef.current = m; setMatch(m); }, []);
 
   /** Extend the provenance chain for the newest turn and anchor it in the live ledger. */
-  const anchor = useCallback(async (m: MatchState, turn: Turn) => {
-    const prev = m.chain?.[turn.index - 1] ?? null;
-    // the ledger doc is created asynchronously at start; never commit before it exists
-    const l = ledgerRef.current;
-    const open = l && l.id === m.id ? await l.ready : false;
-    const hash = await commitTurn({ ...m, ledgerOpen: open }, turn, prev);
-    // the match may have moved on (or been replaced) while hashing; only extend the same match
-    const cur = matchRef.current;
-    if (cur.id !== m.id) return;
-    const chain = [...(cur.chain ?? [])];
-    chain[turn.index] = hash;
-    put({ ...cur, chain });
+  const anchor = useCallback((m: MatchState, turn: Turn) => {
+    // strictly serialised per match: each hash reads its predecessor from the live chain
+    // only after the previous anchor has finished, and each commit is acknowledged in order
+    const q = anchorQueueRef.current;
+    if (q.id !== m.id) anchorQueueRef.current = { id: m.id, tail: Promise.resolve() };
+    const job = async () => {
+      const l = ledgerRef.current;
+      const open = l && l.id === m.id ? await l.ready : false;
+      const cur0 = matchRef.current;
+      if (cur0.id !== m.id) return;
+      const prev = turn.index === 0 ? null : cur0.chain?.[turn.index - 1] ?? null;
+      const hash = await commitTurn({ ...cur0, ledgerOpen: open }, turn, prev);
+      const cur = matchRef.current;
+      if (cur.id !== m.id) return;
+      const chain = [...(cur.chain ?? [])];
+      chain[turn.index] = hash;
+      put({ ...cur, chain });
+    };
+    anchorQueueRef.current.tail = anchorQueueRef.current.tail.then(job, job);
+    return anchorQueueRef.current.tail;
   }, [put]);
 
   // ── prompt construction ────────────────────────────────────────────────────
@@ -180,9 +192,12 @@ export function useMatch() {
       await new Promise<void>((resolve) => {
         const el = new Audio(url);
         audioRef.current = el;
-        el.onended = () => { URL.revokeObjectURL(url); resolve(); };
-        el.onerror = () => { URL.revokeObjectURL(url); resolve(); };
-        void el.play().catch(() => resolve());
+        const done = () => { URL.revokeObjectURL(url); audioDoneRef.current = null; resolve(); };
+        audioDoneRef.current = done;
+        el.onended = done;
+        el.onerror = done;
+        el.onpause = () => { if (el.currentTime < el.duration) done(); }; // HALT pauses; don't hang the loop
+        void el.play().catch(done);
       });
     } catch (e) { console.warn("TTS failed", e); }
   }, []);
@@ -342,19 +357,31 @@ export function useMatch() {
     if (!hit) return null;
     const sc = scenarioById(m.config.scenarioId);
     if (!sc.endsOnBoth) return hit;
-    // deals and charters need both parties: the previous turn (the other side) must carry a marker too
+    // deals and charters need both parties: the previous turn (the other side) must carry a
+    // COMPATIBLE marker. [[DEAL: a / b]] from one side must equal [[DEAL: b / a]] from the other.
     const prev = m.turns[m.turns.length - 2];
-    if (!prev || !markerIn(m, prev.delivered)) return null;
-    return `${markerIn(m, prev.delivered)} then ${hit}`;
+    const prevHit = prev ? markerIn(m, prev.delivered) : null;
+    if (!prevHit) return null;
+    const nums = (s: string) => (s.match(/\d+/g) ?? []).map(Number);
+    const a = nums(hit), b = nums(prevHit);
+    if (a.length === 2 && b.length === 2) {
+      if (a[0] !== b[1] || a[1] !== b[0]) return null; // different numbers: no deal yet
+    } else if (hit.replace(/\s+/g, "").toUpperCase() !== prevHit.replace(/\s+/g, "").toUpperCase()) {
+      return null; // SIGNED vs DEADLOCK is not agreement
+    }
+    return `${prevHit} then ${hit}`;
   }, [isLocked, markerIn]);
 
   const finishMatch = useCallback((m: MatchState, reason: string) => {
     put({ ...m, status: "done", endedReason: reason });
+    // after the last anchor lands, write the terminal record (turn count + head)
+    void anchorQueueRef.current.tail.then(() => { if (matchRef.current.id === m.id) return sealLedger(matchRef.current); });
   }, [put]);
 
   const runLoop = useCallback(async () => {
-    if (loopRef.current) return; // another loop owns the match
-    loopRef.current = true;
+    const owner = matchRef.current.id;
+    if (loopRef.current === owner) return; // this match already has a loop
+    loopRef.current = owner;
     stopRef.current = false;
     try {
       const sc = scenarioById(matchRef.current.config.scenarioId);
@@ -396,8 +423,10 @@ export function useMatch() {
         }
 
         const d = await generate(side, m, []);
-        // HALT / NEW MATCH / fork happened while we were generating: drop the result, keep the cost.
-        if (stopRef.current || matchRef.current.id !== m.id) {
+        // HALT / NEW MATCH / fork happened while we were generating: drop the result.
+        // Cost is banked only on the match it belonged to; never charged to a replacement.
+        if (matchRef.current.id !== m.id) return;
+        if (stopRef.current) {
           put({ ...matchRef.current, discarded: [...matchRef.current.discarded, ...d.attempts.map((a) => ({ ...a, rejected: true }))] });
           return;
         }
@@ -427,7 +456,7 @@ export function useMatch() {
       }
       if (matchRef.current.status === "running") put({ ...matchRef.current, status: "paused" });
     } finally {
-      loopRef.current = false;
+      if (loopRef.current === owner) loopRef.current = null;
     }
   }, [commit, endedBy, finishMatch, generate, put, setDraft, spend, speak]);
 
@@ -436,6 +465,7 @@ export function useMatch() {
     stopRef.current = true;
     abortRef.current?.abort();
     audioRef.current?.pause();
+    audioDoneRef.current?.();
     try { speechSynthesis.cancel(); } catch {}
     const m = matchRef.current;
     if (m.status === "running" || m.status === "awaiting-approval" || m.status === "awaiting-human") {
@@ -447,7 +477,7 @@ export function useMatch() {
     stop();
     const m = freshMatch(config);
     put(m); setDraft(null);
-    const ready = openLedger(m);
+    const ready = openLedger(m, voiceRef.current.on);
     ledgerRef.current = { id: m.id, ready };
     void ready.then((ok) => { if (matchRef.current.id === m.id) put({ ...matchRef.current, ledgerOpen: ok }); });
     setVoice((v) => ({ ...v, charsA: 0, charsB: 0, usd: 0 }));
@@ -486,7 +516,7 @@ export function useMatch() {
   /** Replace: discard the model's text entirely, send your own under its callsign. */
   const replaceWith = useCallback(
     async (text: string) => {
-      const d = draftRef.current; if (!d) return;
+      const d = draftRef.current; if (!d || d.streaming) return;
       setDraft(null);
       const attempts = d.attempts.map((a) => ({ ...a, rejected: true }));
       await deliver({ ...d, attempts, delivered: text }, text, "operator-replaced");
@@ -541,7 +571,7 @@ export function useMatch() {
     }
     setBranches((b) => [...b, m]);
     const forked: MatchState = {
-      ...m, id: uid(), parentId: m.id, forkedAtTurn: index, status: "paused",
+      ...m, id: uid(), parentId: m.id, forkedAtTurn: index, status: "paused", endedReason: undefined,
       turns: m.turns.slice(0, index + 1),
       injects: m.injects.filter((i) => i.afterTurn <= index),
       discarded: [],
@@ -552,12 +582,12 @@ export function useMatch() {
     put(forked); setDraft(null);
     // a fork is a new ledger; the inherited prefix is re-anchored now (its commit times will
     // be a burst, which the site reports honestly as "forked")
-    const readyF = openLedger(forked);
+    const readyF = openLedger(forked, voiceRef.current.on);
     ledgerRef.current = { id: forked.id, ready: readyF };
     void readyF.then(async (ok) => {
       if (matchRef.current.id !== forked.id) return;
       put({ ...matchRef.current, ledgerOpen: ok });
-      if (ok) for (const t of forked.turns) await commitTurn({ ...forked, ledgerOpen: true }, t, forked.chain?.[t.index - 1] ?? null);
+      if (ok) for (const t of forked.turns) await commitTurn({ ...matchRef.current, ledgerOpen: true }, t, forked.chain?.[t.index - 1] ?? null);
     });
   }, [put, setDraft, stop]);
 
@@ -569,7 +599,7 @@ export function useMatch() {
     const swapped: MatchConfig = { ...m.config, A: { ...m.config.B }, B: { ...m.config.A } };
     const twin = { ...freshMatch(swapped), label: "twin (sides swapped)" };
     put(twin); setDraft(null);
-    const readyT = openLedger(twin);
+    const readyT = openLedger(twin, voiceRef.current.on);
     ledgerRef.current = { id: twin.id, ready: readyT };
     void readyT.then((ok) => { if (matchRef.current.id === twin.id) put({ ...matchRef.current, ledgerOpen: ok }); });
     void runLoop();
