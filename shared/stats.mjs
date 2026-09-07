@@ -13,6 +13,9 @@ export function sd(xs) {
   return Math.sqrt(xs.reduce((a, x) => a + (x - m) ** 2, 0) / (xs.length - 1));
 }
 
+/** Fewest complete pairs for which `excludesZero` may be true. */
+export const MIN_PAIRS_FOR_CLAIM = 6;
+
 /** Deterministic PRNG (mulberry32) so a summary is reproducible from its seed. */
 export function rng(seed = 1) {
   let a = seed >>> 0;
@@ -66,9 +69,10 @@ export function pairedDelta(pairs, opts = {}) {
     up: deltas.filter((d) => d > 0).length,
     down: deltas.filter((d) => d < 0).length,
     tied: deltas.filter((d) => d === 0).length,
-    // a CI that excludes zero is the only "significance" this tool reports
-    // fewer than three pairs cannot support the claim, whatever the resamples say
-    excludesZero: ok.length >= 3 && Number.isFinite(ci.lo) && (ci.lo > 0 || ci.hi < 0),
+    // a CI that excludes zero is the only "significance" this tool reports, and only from six
+    // pairs up: below that the percentile bootstrap is degenerate (three concordant signs happen
+    // a quarter of the time under no effect), so the interval is descriptive only
+    excludesZero: ok.length >= MIN_PAIRS_FOR_CLAIM && Number.isFinite(ci.lo) && (ci.lo > 0 || ci.hi < 0),
   };
 }
 

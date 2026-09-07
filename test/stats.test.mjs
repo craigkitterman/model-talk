@@ -36,6 +36,8 @@ test("a clear effect excludes zero; a null effect does not", () => {
   assert.equal(nothing.excludesZero, false);
   assert.equal(pairedDelta([[0, 1]]).excludesZero, false, "one pair can never be significant");
   assert.equal(pairedDelta([[0, 1], [0, 1]]).excludesZero, false, "two identical pairs are still not evidence");
+  assert.equal(pairedDelta([[0, 1], [0, 1], [0, 1]]).excludesZero, false, "three concordant pairs happen 25% of the time under no effect");
+  assert.equal(pairedDelta([[0, 1], [0, 1], [0, 1], [0, 1], [0, 1], [0, 1]]).excludesZero, true, "six concordant pairs may claim it");
 });
 
 test("rate ignores nulls", () => {
