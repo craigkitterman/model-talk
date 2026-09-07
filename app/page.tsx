@@ -48,7 +48,12 @@ export default function Page() {
           ``,
         ];
         for (const t of m.turns) {
-          const flag = t.kind === "model" ? "" : ` _(${t.kind})_`;
+          const KIND: Record<string, string> = {
+            model: "", "system-note": "opening line",
+            "operator-edited": "edited by operator", "operator-replaced": "written by operator",
+            human: "written by operator", inject: "inject",
+          };
+          const flag = KIND[t.kind] ? ` _(${KIND[t.kind]})_` : "";
           lines.push(`### ${t.callsign} · #${t.index}${flag}`, ``, t.delivered, ``);
           if (t.tap) lines.push(`> **TAP (private):** ${t.tap.replace(/\n/g, " · ")}`, ``);
           for (const inj of m.injects.filter((i) => i.afterTurn === t.index)) {
@@ -84,37 +89,38 @@ export default function Page() {
   const accentA = PROVIDERS[byId(M.match.config.A.modelId)!.provider].color;
   const accentB = PROVIDERS[byId(M.match.config.B.modelId)!.provider].color;
 
-  return (
-    <>
-      <Arena
-        m={M.match}
-        live={M.live}
-        spend={M.spend}
-        voice={M.voice}
-        status={M.match.status}
-        onStop={M.stop}
-        onResume={M.resume}
-        onInject={M.inject}
-        onFork={M.forkAt}
-        onTwin={M.twinRun}
-        onExport={exportRun}
-        onNew={() => { M.stop(); setPhase("setup"); }}
+  const interceptor =
+    d && (M.match.status === "awaiting-approval" || M.match.status === "awaiting-human" || M.match.status === "error") ? (
+      <Interceptor
+        draft={d}
+        accentFrom={d.side === "A" ? accentA : accentB}
+        accentTo={d.side === "A" ? accentB : accentA}
+        callsignFrom={d.side === "A" ? M.match.config.A.callsign : M.match.config.B.callsign}
+        callsignTo={d.side === "A" ? M.match.config.B.callsign : M.match.config.A.callsign}
+        awaitingHuman={M.match.status === "awaiting-human"}
+        onApprove={M.approve}
+        onReplace={M.replaceWith}
+        onRegenerate={M.regenerate}
+        onCancel={() => { M.setDraft(null); M.stop(); }}
+        micSupported={mic}
       />
-      {d && (M.match.status === "awaiting-approval" || M.match.status === "awaiting-human" || M.match.status === "error") && (
-        <Interceptor
-          draft={d}
-          accentFrom={d.side === "A" ? accentA : accentB}
-          accentTo={d.side === "A" ? accentB : accentA}
-          callsignFrom={d.side === "A" ? M.match.config.A.callsign : M.match.config.B.callsign}
-          callsignTo={d.side === "A" ? M.match.config.B.callsign : M.match.config.A.callsign}
-          awaitingHuman={M.match.status === "awaiting-human"}
-          onApprove={M.approve}
-          onReplace={M.replaceWith}
-          onRegenerate={M.regenerate}
-          onCancel={() => { M.setDraft(null); M.stop(); }}
-          micSupported={mic}
-        />
-      )}
-    </>
+    ) : null;
+
+  return (
+    <Arena
+      m={M.match}
+      live={M.live}
+      spend={M.spend}
+      voice={M.voice}
+      status={M.match.status}
+      onStop={M.stop}
+      onResume={M.resume}
+      onInject={M.inject}
+      onFork={M.forkAt}
+      onTwin={M.twinRun}
+      onExport={exportRun}
+      onNew={() => { M.stop(); setPhase("setup"); }}
+      dock={interceptor}
+    />
   );
 }

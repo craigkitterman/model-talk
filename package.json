@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3400",
-    "build": "next build",
+    "build": "next build --distDir .next-prod",
     "start": "next start -p 3400",
     "typecheck": "tsc --noEmit"
   },

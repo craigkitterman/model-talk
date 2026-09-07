@@ -88,7 +88,7 @@ function Bubble({ t, accent, onFork }: { t: Turn; accent: string; onFork: () => 
 }
 
 export default function Arena({
-  m, live, spend, voice, onStop, onResume, onInject, onFork, onTwin, onExport, onNew, status,
+  m, live, spend, voice, onStop, onResume, onInject, onFork, onTwin, onExport, onNew, status, dock,
 }: {
   m: MatchState;
   live: { side: Side; text: string } | null;
@@ -99,6 +99,8 @@ export default function Arena({
   onInject: (side: Side, text: string) => void;
   onFork: (i: number) => void; onTwin: () => void;
   onExport: (fmt: "json" | "md") => void; onNew: () => void;
+  /** The interceptor, docked below the transcript so the conversation stays readable. */
+  dock?: React.ReactNode;
 }) {
   const accentA = PROVIDERS[byId(m.config.A.modelId)!.provider].color;
   const accentB = PROVIDERS[byId(m.config.B.modelId)!.provider].color;
@@ -106,7 +108,7 @@ export default function Arena({
   const [injTarget, setInjTarget] = useState<Side>("A");
   const [injText, setInjText] = useState("");
 
-  useEffect(() => { scrollRef.current?.scrollTo({ top: 1e9, behavior: "smooth" }); }, [m.turns.length, live?.text]);
+  useEffect(() => { scrollRef.current?.scrollTo({ top: 1e9, behavior: "smooth" }); }, [m.turns.length, live?.text, !!dock]);
 
   const stats = useMemo(() => {
     const taps = m.turns.filter((t) => t.tap);
@@ -167,11 +169,12 @@ export default function Arena({
 
       <div className="flex-1 min-h-0 grid grid-cols-[1fr_330px]">
         {/* WIRE */}
-        <div className="relative min-w-0">
+        <div className="relative min-w-0 min-h-0 flex flex-col">
           <div className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2 bg-gradient-to-b from-transparent via-edge-hot to-transparent pointer-events-none">
             {running && <div className="packet absolute -left-[2px] w-[5px] h-14 rounded-full" style={{ background: `linear-gradient(180deg, transparent, ${accentA}, transparent)` }} />}
           </div>
-          <div ref={scrollRef} className="h-full overflow-y-auto px-8 py-6 space-y-4">
+          <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-8 py-6">
+            <div className="min-h-full flex flex-col justify-end gap-4">
             {m.turns.map((t) => (
               <Bubble key={t.id} t={t} accent={t.from === "A" ? accentA : accentB} onFork={() => onFork(t.index)} />
             ))}
@@ -193,11 +196,13 @@ export default function Arena({
                 <div className="text-[12px] text-dim mt-1">{m.endedReason}</div>
               </div>
             )}
+            </div>
           </div>
+          {dock}
         </div>
 
         {/* OPS */}
-        <aside className="border-l border-edge plate flex flex-col min-h-0">
+        <aside className="border-l border-edge plate flex flex-col min-h-0 overflow-hidden">
           <div className="flex-1 overflow-y-auto p-4 space-y-5">
             <section>
               <div className="label mb-2">telemetry</div>
