@@ -32,17 +32,17 @@ function Swatch({ t, active, onPick }: { t: Theme; active: boolean; onPick: () =
           </div>
         </div>
         <div className="flex items-center gap-1.5 mt-2">
-          <span className="text-[7px] tracking-[.18em] uppercase" style={{ color: k.faint, fontFamily: "var(--font-ui)" }}>held mid-wire</span>
+          <span className="text-[7px] tracking-[.1em] uppercase" style={{ color: k.faint, fontFamily: "var(--font-ui)" }}>held mid-wire</span>
           <span className="flex-1" />
-          <span className="px-2 py-[3px] text-[7px] font-extrabold tracking-[.18em]" style={{ background: k.accent, color: k.void, fontFamily: "var(--font-ui)" }}>APPROVE ▶</span>
+          <span className="px-2 py-[3px] text-[7px] font-extrabold tracking-[.1em]" style={{ background: k.accent, color: k.void, fontFamily: "var(--font-ui)" }}>APPROVE ▶</span>
         </div>
       </div>
       <div className="px-3 py-2 border-t" style={{ borderColor: k.edge, background: k.deck }}>
         <div className="flex items-center justify-between">
-          <span className="uiFont text-[11px] font-extrabold tracking-[.18em]" style={{ color: k.accent }}>{t.name}</span>
-          {active && <span className="text-[9px] tracking-[.2em] uppercase" style={{ color: k.good, fontFamily: "var(--font-ui)" }}>active</span>}
+          <span className="uiFont text-[12px] font-extrabold tracking-[.1em]" style={{ color: k.accent }}>{t.name}</span>
+          {active && <span className="text-[9px] tracking-[.14em] uppercase" style={{ color: k.good, fontFamily: "var(--font-ui)" }}>active</span>}
         </div>
-        <div className="text-[10px] mt-0.5" style={{ color: k.dim }}>{t.tagline}</div>
+        <div className="text-[12px] mt-0.5" style={{ color: k.dim }}>{t.tagline}</div>
       </div>
     </button>
   );
@@ -92,10 +92,10 @@ export default function Settings({ open, onClose }: { open: boolean; onClose: ()
       <aside className="absolute right-0 top-0 h-full w-[440px] max-w-full plate border-l border-edge flex flex-col rise" style={{ animationName: "slideIn" }}>
         <header className="flex items-center justify-between px-5 py-4 border-b border-edge">
           <div>
-            <div className="uiFont text-[13px] font-extrabold tracking-[.2em] text-ink/90">SETTINGS</div>
+            <div className="uiFont text-[13px] font-extrabold tracking-[.14em] text-ink/90">SETTINGS</div>
             <div className="label mt-0.5">saved in this browser</div>
           </div>
-          <button onClick={onClose} className="clip-tab hair plate px-3 py-2 uiFont text-[11px] font-bold tracking-[.14em] text-dim hover:text-ink" aria-label="Close settings">ESC</button>
+          <button onClick={onClose} className="clip-tab hair plate px-3 py-2 uiFont text-[12px] font-bold tracking-[.14em] text-dim hover:text-ink" aria-label="Close settings">ESC</button>
         </header>
 
         <div className="flex-1 overflow-y-auto p-5 space-y-6">

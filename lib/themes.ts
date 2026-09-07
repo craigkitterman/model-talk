@@ -27,7 +27,7 @@ export const THEMES: Theme[] = [
     scheme: "dark",
     tokens: {
       void: "#05070c", deck: "#0a0e16", panel: "#0e1420", edge: "#1b2436", edgeHot: "#2b3a55",
-      ink: "#e8eef7", dim: "#7c8ba3", faint: "#47536a",
+      ink: "#e8eef7", dim: "#9aa7ba", faint: "#5c6a82",
       accent: "#ffb020", hazard: "#ff4d3d", good: "#3fe0a8",
       grid: "rgba(120,150,200,0.045)", scan: 0.6,
       plateA: "#0d1421", plateB: "#080c14",
@@ -80,12 +80,12 @@ export const themeById = (id: string) => THEMES.find((t) => t.id === id) ?? THEM
 export function cssVars(t: Theme): Record<string, string> {
   const k = t.tokens;
   return {
-    "--color-void": k.void, "--color-deck": k.deck, "--color-panel": k.panel,
-    "--color-edge": k.edge, "--color-edge-hot": k.edgeHot,
-    "--color-ink": k.ink, "--color-dim": k.dim, "--color-faint": k.faint,
-    "--color-amber": k.accent, "--color-hazard": k.hazard, "--color-good": k.good,
-    "--grid-line": k.grid, "--scan-alpha": String(k.scan),
-    "--plate-a": k.plateA, "--plate-b": k.plateB,
+    "--mt-color-void": k.void, "--mt-color-deck": k.deck, "--mt-color-panel": k.panel,
+    "--mt-color-edge": k.edge, "--mt-color-edge-hot": k.edgeHot,
+    "--mt-color-ink": k.ink, "--mt-color-dim": k.dim, "--mt-color-faint": k.faint,
+    "--mt-color-accent": k.accent, "--mt-color-hazard": k.hazard, "--mt-color-good": k.good,
+    "--mt-grid-line": k.grid, "--mt-scan-alpha": String(k.scan),
+    "--mt-plate-a": k.plateA, "--mt-plate-b": k.plateB,
   };
 }
 

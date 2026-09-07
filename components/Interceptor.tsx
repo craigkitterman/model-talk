@@ -93,7 +93,7 @@ export default function Interceptor({
           </div>
 
           {(draft.truncated || draft.lockedMarker) && !draft.error && (
-            <div className="px-4 py-1.5 text-[11px] text-amber border-b border-edge bg-amber/5">
+            <div className="px-4 py-1.5 text-[12px] text-amber border-b border-edge bg-amber/5">
               {draft.truncated && <span>⚠ provider stopped early; this text is probably cut off (raise max tokens). </span>}
               {draft.lockedMarker && <span>⚠ a verdict/end marker appeared before the lock turn and was stripped from what will be delivered.</span>}
             </div>
@@ -115,7 +115,7 @@ export default function Interceptor({
               placeholder={awaitingHuman ? "Your line. Type it, or hit the mic. ⌘/Ctrl+Enter to send." : ""}
               aria-label={awaitingHuman ? "Your line" : `Message from ${modelFrom} (${callsignFrom}) held for approval; edit before sending`}
               disabled={flying || draft.streaming}
-              className="w-full bg-deck/70 hair px-3.5 py-2.5 text-[13.5px] leading-relaxed outline-none resize-none
+              className="w-full bg-deck/70 hair px-3.5 py-2.5 text-[15px] leading-relaxed outline-none resize-none
                          font-[family-name:var(--font-body)] placeholder:text-faint focus:border-amber/60"
             />
 
@@ -136,33 +136,33 @@ export default function Interceptor({
             <div className="flex items-center gap-2 mt-2.5">
               {!awaitingHuman && (
                 <button onClick={onRegenerate} disabled={flying || draft.streaming}
-                  className="disabled:opacity-40 clip-tab hair plate px-3.5 py-2.5 uiFont text-[11px] font-bold tracking-[.14em] text-dim hover:text-ink hover:border-edge-hot">
+                  className="disabled:opacity-40 clip-tab hair plate px-3.5 py-2.5 uiFont text-[12px] font-bold tracking-[.14em] text-dim hover:text-ink hover:border-edge-hot">
                   {draft.error ? "RETRY" : "REROLL"}
                 </button>
               )}
               {micSupported && (
                 <button onClick={toggleMic}
-                  className={`clip-tab hair px-3.5 py-2.5 uiFont text-[11px] font-bold tracking-[.14em] ${listening ? "bg-hazard/15 border-hazard/60 text-hazard" : "plate text-dim hover:text-ink"}`}>
+                  className={`clip-tab hair px-3.5 py-2.5 uiFont text-[12px] font-bold tracking-[.14em] ${listening ? "bg-hazard/15 border-hazard/60 text-hazard" : "plate text-dim hover:text-ink"}`}>
                   {listening ? "● LISTENING" : "MIC"}
                 </button>
               )}
               <div className="flex-1" />
               {!awaitingHuman && (
                 <button onClick={onCancel} disabled={flying}
-                  className="disabled:opacity-40 clip-tab hair plate px-3.5 py-2.5 uiFont text-[11px] font-bold tracking-[.14em] text-dim hover:text-hazard">
+                  className="disabled:opacity-40 clip-tab hair plate px-3.5 py-2.5 uiFont text-[12px] font-bold tracking-[.14em] text-dim hover:text-hazard">
                   KILL
                 </button>
               )}
               {dirty && !awaitingHuman && (
                 <button onClick={() => fly(() => onReplace(text))} disabled={flying}
-                  className="disabled:opacity-40 clip-tab hair px-5 py-2.5 uiFont text-[11px] font-extrabold tracking-[.16em] bg-hazard/15 border-hazard/60 text-hazard hover:bg-hazard/25">
+                  className="disabled:opacity-40 clip-tab hair px-5 py-2.5 uiFont text-[12px] font-extrabold tracking-[.1em] bg-hazard/15 border-hazard/60 text-hazard hover:bg-hazard/25">
                   REPLACE &amp; SEND
                 </button>
               )}
               <button
                 onClick={send}
                 disabled={!text.trim() || flying || draft.streaming}
-                className="clip-tab uiFont text-[12px] font-extrabold tracking-[.2em] px-8 py-2.5 bg-amber text-void hover:brightness-110 disabled:opacity-30"
+                className="clip-tab uiFont text-[12px] font-extrabold tracking-[.14em] px-8 py-2.5 bg-amber text-void hover:brightness-110 disabled:opacity-30"
                 style={{ boxShadow: "0 0 44px -14px var(--color-amber)" }}
               >
                 {draft.streaming ? "REROLLING…" : awaitingHuman ? "SEND" : dirty ? "SEND EDITED" : "APPROVE ▶"}

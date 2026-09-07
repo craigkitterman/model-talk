@@ -64,7 +64,7 @@ function Bubble({ t, accent, onFork }: { t: Turn; accent: string; onFork: () => 
     <div className={`flex ${right ? "justify-end" : "justify-start"} rise`}>
       <div className={`max-w-[78%] group ${right ? "items-end" : "items-start"} flex flex-col`}>
         <div className={`flex items-center gap-2 mb-1 ${right ? "flex-row-reverse" : ""}`}>
-          <span className="uiFont text-[11.5px] font-extrabold tracking-[.06em]" style={{ color: accent }}>{modelName}</span>
+          <span className="uiFont text-[12px] font-extrabold tracking-[.06em]" style={{ color: accent }}>{modelName}</span>
           <span className="label">as {t.callsign}</span>
           <span className="label">#{t.index}</span>
           {flag && <span className="label text-amber">{flag}</span>}
@@ -72,7 +72,7 @@ function Bubble({ t, accent, onFork }: { t: Turn; accent: string; onFork: () => 
           <button onClick={onFork} aria-label={`Fork timeline at message ${t.index}`} className="label opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity hover:text-amber">fork ⑂</button>
         </div>
         <div
-          className={`plate hair px-4 py-3 text-[13.5px] leading-relaxed whitespace-pre-wrap ${right ? "clip-tab" : "clip-bevel"} ${
+          className={`plate hair px-5 py-4 text-[15px] leading-relaxed whitespace-pre-wrap ${
             t.kind === "operator-replaced" || t.kind === "operator-edited" ? "border-amber/45" : ""
           }`}
           style={{ borderLeftColor: right ? undefined : accent, borderLeftWidth: right ? undefined : 2, borderRightColor: right ? accent : undefined, borderRightWidth: right ? 2 : undefined }}
@@ -82,7 +82,7 @@ function Bubble({ t, accent, onFork }: { t: Turn; accent: string; onFork: () => 
         {t.tap && (
           <details className={`mt-1 w-full ${right ? "text-right" : ""}`}>
             <summary className="label text-good/70 cursor-pointer select-none hover:text-good">tap</summary>
-            <pre className="num text-[10.5px] text-good/70 whitespace-pre-wrap mt-1 hair clip-tab bg-good/[.04] border-good/20 px-3 py-2 text-left">{t.tap}</pre>
+            <pre className="num text-[12px] text-good/70 whitespace-pre-wrap mt-1 hair clip-tab bg-good/[.04] border-good/20 px-3 py-2 text-left">{t.tap}</pre>
           </details>
         )}
       </div>
@@ -132,7 +132,7 @@ export default function Arena({
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-3">
             <button onClick={onNew} title="Back to setup"
-              className="clip-tab hair plate px-3 py-2 uiFont text-[11px] font-bold tracking-[.16em] text-dim hover:text-amber hover:border-edge-hot">
+              className="clip-tab hair plate px-3 py-2 uiFont text-[12px] font-bold tracking-[.1em] text-dim hover:text-amber hover:border-edge-hot">
               ◀ SETUP
             </button>
             <Wordmark />
@@ -181,10 +181,10 @@ export default function Arena({
       <div className="flex-1 min-h-0 grid grid-cols-[1fr_330px]">
         {/* WIRE */}
         <div className="relative min-w-0 min-h-0 flex flex-col">
-          <div className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2 bg-gradient-to-b from-transparent via-edge-hot to-transparent pointer-events-none">
+          <div className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2 bg-gradient-to-b from-transparent via-edge-hot to-transparent pointer-events-none z-0" aria-hidden>
             {running && <div className="packet absolute -left-[2px] w-[5px] h-14 rounded-full" style={{ background: `linear-gradient(180deg, transparent, ${accentA}, transparent)` }} />}
           </div>
-          <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-8 py-6">
+          <div ref={scrollRef} className="relative z-10 flex-1 min-h-0 overflow-y-auto px-8 py-6">
             <div className="min-h-full flex flex-col justify-end gap-4">
             {m.turns.map((t) => (
               <Bubble key={t.id} t={t} accent={t.from === "A" ? accentA : accentB} onFork={() => onFork(t.index)} />
@@ -195,7 +195,7 @@ export default function Arena({
                   <div className="label mb-1" style={{ color: live.side === "A" ? accentA : accentB }}>
                     {byId(live.side === "A" ? m.config.A.modelId : m.config.B.modelId)?.name ?? "model"} composing
                   </div>
-                  <div className="plate hair clip-bevel px-4 py-3 text-[13.5px] leading-relaxed whitespace-pre-wrap text-ink/60 caret">
+                  <div className="plate hair clip-bevel px-4 py-3 text-[15px] leading-relaxed whitespace-pre-wrap text-ink/60 caret">
                     {live.text.replace(/<<<TAP[\s\S]*/i, "")}
                   </div>
                 </div>
@@ -206,10 +206,10 @@ export default function Arena({
                 <div className="label text-amber">channel closed</div>
                 <div className="text-[12px] text-dim mt-1 mb-4">{m.endedReason}</div>
                 <div className="flex justify-center gap-2">
-                  <button onClick={onNew} className="clip-tab uiFont text-[12px] font-extrabold tracking-[.2em] px-7 py-3 bg-amber text-void hover:brightness-110"
+                  <button onClick={onNew} className="clip-tab uiFont text-[12px] font-extrabold tracking-[.14em] px-7 py-3 bg-amber text-void hover:brightness-110"
                     style={{ boxShadow: "0 0 44px -14px var(--color-amber)" }}>NEW MATCH</button>
-                  <button onClick={onTwin} className="clip-tab hair plate px-5 py-3 uiFont text-[11px] font-bold tracking-[.16em] text-dim hover:text-ink">TWIN RUN ⇄</button>
-                  <button onClick={() => onExport("md")} className="clip-tab hair plate px-5 py-3 uiFont text-[11px] font-bold tracking-[.16em] text-dim hover:text-ink">EXPORT</button>
+                  <button onClick={onTwin} className="clip-tab hair plate px-5 py-3 uiFont text-[12px] font-bold tracking-[.1em] text-dim hover:text-ink">TWIN RUN ⇄</button>
+                  <button onClick={() => onExport("md")} className="clip-tab hair plate px-5 py-3 uiFont text-[12px] font-bold tracking-[.1em] text-dim hover:text-ink">EXPORT</button>
                 </div>
               </div>
             )}
@@ -233,7 +233,7 @@ export default function Arena({
                 ].map(([k, v]) => (
                   <div key={k} className="flex justify-between items-baseline border-b border-edge/50 pb-1">
                     <span className="label">{k}</span>
-                    <span className={`num text-[11px] ${k === "self-reported bluffs" && stats.bluffs > 0 ? "text-hazard" : "text-ink/80"}`}>{v}</span>
+                    <span className={`num text-[12px] ${k === "self-reported bluffs" && stats.bluffs > 0 ? "text-hazard" : "text-ink/80"}`}>{v}</span>
                   </div>
                 ))}
               </div>
@@ -244,24 +244,24 @@ export default function Arena({
               <div className="flex gap-1 mb-2">
                 {(["A", "B"] as Side[]).map((s) => (
                   <button key={s} onClick={() => setInjTarget(s)}
-                    className={`flex-1 clip-tab hair py-1.5 uiFont text-[11px] font-bold tracking-wider ${injTarget === s ? "bg-hazard/15 border-hazard/50 text-hazard" : "text-dim"}`}>
+                    className={`flex-1 clip-tab hair py-1.5 uiFont text-[12px] font-bold tracking-wider ${injTarget === s ? "bg-hazard/15 border-hazard/50 text-hazard" : "text-dim"}`}>
                     {byId(s === "A" ? m.config.A.modelId : m.config.B.modelId)?.name ?? (s === "A" ? m.config.A.callsign : m.config.B.callsign)}
                   </button>
                 ))}
               </div>
               <textarea value={injText} onChange={(e) => setInjText(e.target.value)} rows={3}
                 placeholder="A private whisper only this side sees. e.g. “you now suspect your counterpart is lying.”"
-                className="w-full bg-deck hair px-3 py-2 text-[11.5px] outline-none resize-none placeholder:text-faint" />
+                className="w-full bg-deck hair px-3 py-2 text-[12px] outline-none resize-none placeholder:text-faint" />
               <button
                 onClick={() => { if (injText.trim()) { onInject(injTarget, injText.trim()); setInjText(""); } }}
                 disabled={!injText.trim()}
-                className="w-full mt-1.5 clip-tab hair py-2 uiFont text-[11px] font-bold tracking-[.16em] bg-hazard/10 border-hazard/40 text-hazard disabled:opacity-30">
+                className="w-full mt-1.5 clip-tab hair py-2 uiFont text-[12px] font-bold tracking-[.1em] bg-hazard/10 border-hazard/40 text-hazard disabled:opacity-30">
                 WHISPER
               </button>
               {m.injects.length > 0 && (
                 <div className="mt-2 space-y-1">
                   {m.injects.map((i) => (
-                    <div key={i.id} className="hair clip-tab px-2.5 py-1.5 text-[10.5px] text-dim border-hazard/25">
+                    <div key={i.id} className="hair clip-tab px-2.5 py-1.5 text-[12px] text-dim border-hazard/25">
                       <span className="label text-hazard">→{i.target} @{i.afterTurn}</span> {i.text}
                     </div>
                   ))}
@@ -271,10 +271,10 @@ export default function Arena({
 
             <section>
               <div className="label mb-2">multiverse</div>
-              <p className="text-[11px] text-dim leading-snug mb-2">
+              <p className="text-[12px] text-dim leading-snug mb-2">
                 Hover any message and hit <span className="text-amber">fork ⑂</span> to branch the timeline there. Twin run replays this match with the two loadouts swapped.
               </p>
-              <button onClick={onTwin} className="w-full clip-tab hair plate py-2 uiFont text-[11px] font-bold tracking-[.16em] text-dim hover:text-ink hover:border-edge-hot">
+              <button onClick={onTwin} className="w-full clip-tab hair plate py-2 uiFont text-[12px] font-bold tracking-[.1em] text-dim hover:text-ink hover:border-edge-hot">
                 TWIN RUN ⇄
               </button>
               {m.parentId && <div className="label mt-2 text-amber">branch · forked at #{m.forkedAtTurn}</div>}
@@ -283,15 +283,15 @@ export default function Arena({
 
           <div className="shrink-0 border-t border-edge p-4 space-y-2">
             <div className="grid grid-cols-2 gap-2">
-              <button onClick={() => onExport("json")} className="clip-tab hair plate py-2 uiFont text-[11px] font-bold tracking-[.14em] text-dim hover:text-ink">JSON</button>
-              <button onClick={() => onExport("md")} className="clip-tab hair plate py-2 uiFont text-[11px] font-bold tracking-[.14em] text-dim hover:text-ink">MARKDOWN</button>
+              <button onClick={() => onExport("json")} className="clip-tab hair plate py-2 uiFont text-[12px] font-bold tracking-[.14em] text-dim hover:text-ink">JSON</button>
+              <button onClick={() => onExport("md")} className="clip-tab hair plate py-2 uiFont text-[12px] font-bold tracking-[.14em] text-dim hover:text-ink">MARKDOWN</button>
             </div>
             {running ? (
-              <button onClick={onStop} className="w-full clip-tab hair py-3 uiFont text-[12px] font-extrabold tracking-[.2em] bg-hazard/15 border-hazard/50 text-hazard">HALT</button>
+              <button onClick={onStop} className="w-full clip-tab hair py-3 uiFont text-[12px] font-extrabold tracking-[.14em] bg-hazard/15 border-hazard/50 text-hazard">HALT</button>
             ) : status === "paused" ? (
-              <button onClick={onResume} className="w-full clip-tab py-3 uiFont text-[12px] font-extrabold tracking-[.2em] bg-amber text-void">RESUME</button>
+              <button onClick={onResume} className="w-full clip-tab py-3 uiFont text-[12px] font-extrabold tracking-[.14em] bg-amber text-void">RESUME</button>
             ) : null}
-            <button onClick={onNew} className="w-full clip-tab hair plate py-2 uiFont text-[11px] font-bold tracking-[.16em] text-dim hover:text-ink">NEW MATCH</button>
+            <button onClick={onNew} className="w-full clip-tab hair plate py-2 uiFont text-[12px] font-bold tracking-[.1em] text-dim hover:text-ink">NEW MATCH</button>
           </div>
         </aside>
       </div>

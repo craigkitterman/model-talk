@@ -1,30 +1,41 @@
 @import "tailwindcss";
+@import "../design/tokens.css";
 
-@theme {
-  --color-void: #05070c;
-  --color-deck: #0a0e16;
-  --color-panel: #0e1420;
-  --color-edge: #1b2436;
-  --color-edge-hot: #2b3a55;
-  --color-ink: #e8eef7;
-  --color-dim: #7c8ba3;
-  --color-faint: #47536a;
-  --color-amber: #ffb020;
-  --color-hazard: #ff4d3d;
-  --color-good: #3fe0a8;
+/* Tailwind utilities resolve to the shared tokens, so `text-ink` in the app and
+   `color: var(--mt-color-ink)` on the site are literally the same value. */
+@theme inline {
+  --color-void: var(--mt-color-void);
+  --color-deck: var(--mt-color-deck);
+  --color-panel: var(--mt-color-panel);
+  --color-edge: var(--mt-color-edge);
+  --color-edge-hot: var(--mt-color-edge-hot);
+  --color-ink: var(--mt-color-ink);
+  --color-dim: var(--mt-color-dim);
+  --color-faint: var(--mt-color-faint);
+  --color-amber: var(--mt-color-accent);
+  --color-hazard: var(--mt-color-hazard);
+  --color-good: var(--mt-color-good);
 
-  --font-display: var(--f-display), ui-sans-serif, system-ui;
-  --font-ui: var(--f-ui), ui-sans-serif, system-ui;
-  --font-body: var(--f-body), ui-sans-serif, system-ui;
-  --font-mono: var(--f-mono), ui-monospace, monospace;
+  --font-display: var(--mt-font-mark);
+  --font-ui: var(--mt-font-ui);
+  --font-body: var(--mt-font-body);
+  --font-mono: var(--mt-font-mono);
 }
 
-:root { color-scheme: dark; }
+/* next/font injects the real families as --f-*; point the tokens at them. */
+:root {
+  --mt-font-mark: var(--f-display), "Michroma", system-ui, sans-serif;
+  --mt-font-ui: var(--f-ui), "Oxanium", system-ui, sans-serif;
+  --mt-font-body: var(--f-body), "Sora", system-ui, sans-serif;
+  --mt-font-mono: var(--f-mono), "JetBrains Mono", ui-monospace, monospace;
+}
 
 html, body {
   background: var(--color-void);
   color: var(--color-ink);
   font-family: var(--font-body);
+  font-size: var(--mt-text-base);
+  line-height: var(--mt-leading-body);
   overflow: hidden;
   height: 100%;
 }
@@ -34,8 +45,8 @@ html, body {
   content: "";
   position: fixed; inset: 0; z-index: 0; pointer-events: none;
   background-image:
-    linear-gradient(var(--grid-line, rgba(120,150,200,0.045)) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid-line, rgba(120,150,200,0.045)) 1px, transparent 1px);
+    linear-gradient(var(--mt-grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--mt-grid-line) 1px, transparent 1px);
   background-size: 48px 48px;
   mask-image: radial-gradient(ellipse 120% 90% at 50% 40%, #000 20%, transparent 78%);
 }
@@ -43,7 +54,7 @@ html, body {
   content: "";
   position: fixed; inset: 0; z-index: 0; pointer-events: none;
   background: repeating-linear-gradient(0deg, rgba(255,255,255,0.018) 0 1px, transparent 1px 3px);
-  opacity: var(--scan-alpha, 0.6);
+  opacity: var(--mt-scan-alpha);
 }
 .grain {
   position: fixed; inset: -50%; z-index: 1; pointer-events: none; opacity: 0.035;
@@ -56,11 +67,12 @@ html, body {
 }
 
 /* ── chrome ───────────────────────────────────────────────────────────────── */
-.clip-bevel { clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px); }
-.clip-tab   { clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px)); }
+.clip-bevel { clip-path: polygon(var(--mt-bevel) 0, 100% 0, 100% calc(100% - var(--mt-bevel)), calc(100% - var(--mt-bevel)) 100%, 0 100%, 0 var(--mt-bevel)); }
+/* .clip-tab retired: secondary surfaces are plain 1px rectangles now (readability pass) */
+.clip-tab { border-radius: var(--mt-radius-sm); }
 
-.hair { border: 1px solid var(--color-edge); }
-.plate { background: linear-gradient(160deg, var(--plate-a, #0d1421) 0%, var(--plate-b, #080c14) 100%); }
+.hair { border: var(--mt-border); border-radius: var(--mt-radius-sm); }
+.plate { background: linear-gradient(160deg, var(--mt-plate-a) 0%, var(--mt-plate-b) 100%); }
 :root[data-theme="arctic"] .grain { opacity: 0.02; mix-blend-mode: multiply; }
 :root[data-theme="arctic"] ::-webkit-scrollbar-track { background: #e4eaf3 }
 :root[data-theme="arctic"] ::-webkit-scrollbar-thumb { background: #b8c6da; border-color: #e4eaf3 }
@@ -68,16 +80,13 @@ html, body { transition: background-color .35s ease, color .35s ease; }
 
 .label {
   font-family: var(--font-ui);
-  font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase;
-  color: var(--color-faint); font-weight: 600;
+  font-size: var(--mt-text-xs); letter-spacing: var(--mt-tracking-label); text-transform: uppercase;
+  color: var(--color-faint); font-weight: 600; line-height: var(--mt-leading-snug);
 }
 .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
 .disp { font-family: var(--font-display); letter-spacing: 0.04em; }
-.uiFont { font-family: var(--font-ui); }
+.uiFont { font-family: var(--font-ui); letter-spacing: var(--mt-tracking-ui); }
 
-button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
-  outline: 2px solid var(--color-amber); outline-offset: 2px;
-}
 
 /* ── motion ───────────────────────────────────────────────────────────────── */
 @keyframes rise { from { opacity: 0; transform: translateY(14px) } to { opacity: 1; transform: none } }
@@ -116,6 +125,3 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 ::-webkit-scrollbar-thumb { background: #1e2941; border: 2px solid #070a11; border-radius: 99px }
 ::-webkit-scrollbar-thumb:hover { background: #2d3c5c }
 
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important }
-}

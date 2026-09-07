@@ -23,7 +23,7 @@ function Stat({ k, v, warn }: { k: string; v: string; warn?: boolean }) {
   return (
     <div className="flex items-baseline justify-between gap-3 py-[5px] border-b border-edge/60 last:border-0">
       <span className="label">{k}</span>
-      <span className={`num text-[11px] ${warn ? "text-amber" : "text-ink/85"}`}>{v}</span>
+      <span className={`num text-[12px] ${warn ? "text-amber" : "text-ink/85"}`}>{v}</span>
     </div>
   );
 }
@@ -35,7 +35,7 @@ function Dial({
     <label className="block">
       <div className="flex justify-between items-baseline mb-1">
         <span className="label">{label}</span>
-        <span className="num text-[11px] text-amber">{value}{suffix}</span>
+        <span className="num text-[12px] text-amber">{value}{suffix}</span>
       </div>
       <input
         type="range" min={min} max={max} step={step} value={value}
@@ -104,7 +104,7 @@ function Fighter({
 
       <div className="flex items-baseline justify-between gap-3 mb-3">
         <span className="uiFont text-[15px] font-extrabold tracking-[.04em]" style={{ color: accent }}>{spec.name}</span>
-        <span className="num text-[10px] text-faint truncate">{spec.id}</span>
+        <span className="num text-[12px] text-faint truncate">{spec.id}</span>
       </div>
 
       <div className="mb-4">
@@ -119,7 +119,7 @@ function Fighter({
       </div>
 
       {!spec.verified && (
-        <div className="hair clip-tab px-3 py-2 mb-4 text-[10px] leading-relaxed text-amber/90 bg-amber/5">
+        <div className="hair clip-tab px-3 py-2 mb-4 text-[12px] leading-relaxed text-amber/90 bg-amber/5">
           ⚠ Pricing unverified. Correct it in <span className="num">lib/models/catalog.ts</span> before trusting the meter.
         </div>
       )}
@@ -219,7 +219,7 @@ export default function Setup({
           <div className="flex items-end justify-between mb-3 gap-6">
             <div>
               <div className="label">Scenario</div>
-              <p className="text-[12.5px] text-dim leading-snug mt-1 max-w-[86ch]">
+              <p className="text-[13px] text-dim leading-snug mt-1 max-w-[86ch]">
                 A scenario is a template for an interesting conversation: a hidden brief for each side, an opening
                 line, and a condition that ends the match. The two models never see each other&apos;s brief. Pick one
                 to probe a specific behaviour, or go free-form and write both briefs yourself.
@@ -227,7 +227,7 @@ export default function Setup({
             </div>
             <button
               onClick={() => setConfig((c) => ({ ...c, scenarioId: "custom", maxTurns: 20, customSeed: "" }))}
-              className={`shrink-0 clip-tab hair px-5 py-2.5 uiFont text-[11px] font-bold tracking-[.16em] ${
+              className={`shrink-0 clip-tab hair px-5 py-2.5 uiFont text-[12px] font-bold tracking-[.1em] ${
                 config.scenarioId === "custom" ? "bg-amber/15 border-amber/60 text-amber" : "plate text-dim hover:text-ink hover:border-edge-hot"
               }`}
             >
@@ -245,7 +245,7 @@ export default function Setup({
                   style={{ animationDelay: `${i * 35}ms` }}
                 >
                   <div className={`uiFont text-[13px] font-bold tracking-[.12em] ${on ? "text-amber" : "text-ink/85"}`}>{s.name}</div>
-                  <div className="text-[11px] text-dim mt-0.5 leading-snug">{s.tagline}</div>
+                  <div className="text-[12px] text-dim mt-0.5 leading-snug">{s.tagline}</div>
                 </button>
               );
             })}
@@ -269,7 +269,7 @@ export default function Setup({
             {/* Exact briefs: byte-for-byte what each side receives as its system prompt */}
             <div className="mt-4 flex items-center justify-between gap-3">
               <button onClick={() => setShowBriefs((v) => !v)}
-                className={`clip-tab hair px-4 py-2 uiFont text-[11px] font-bold tracking-[.16em] ${showBriefs ? "bg-amber/10 border-amber/60 text-amber" : "plate text-dim hover:text-ink hover:border-edge-hot"}`}>
+                className={`clip-tab hair px-4 py-2 uiFont text-[12px] font-bold tracking-[.1em] ${showBriefs ? "bg-amber/10 border-amber/60 text-amber" : "plate text-dim hover:text-ink hover:border-edge-hot"}`}>
                 {showBriefs ? "HIDE EXACT BRIEFS" : "SHOW EXACT BRIEFS"}
               </button>
               <span className="label text-right">what each side is told, verbatim, before the first message · includes persona, tap and voice overlays</span>
@@ -285,7 +285,7 @@ export default function Setup({
                   return (
                     <div key={side} className="hair clip-tab bg-deck/60 flex flex-col min-h-0">
                       <div className="flex items-center justify-between px-3 py-2 border-b border-edge">
-                        <span className="uiFont text-[11px] font-extrabold tracking-[.18em]" style={{ color: accent }}>
+                        <span className="uiFont text-[12px] font-extrabold tracking-[.1em]" style={{ color: accent }}>
                           {lo.callsign} <span className="label">· side {side} · {full.length.toLocaleString()} chars</span>
                           {custom && scenario.id !== "custom" && <span className="label text-amber ml-2">edited</span>}
                         </span>
@@ -305,10 +305,10 @@ export default function Setup({
                           onChange={(e) => setConfig((c) => ({ ...c, [side === "A" ? "customA" : "customB"]: e.target.value }))}
                           rows={16}
                           aria-label={`Edit brief for side ${side}`}
-                          className="num text-[11px] leading-relaxed bg-panel px-3 py-2 outline-none resize-y focus:border-amber/60"
+                          className="num text-[12px] leading-relaxed bg-panel px-3 py-2 outline-none resize-y focus:border-amber/60"
                         />
                       ) : (
-                        <pre className="num text-[11px] leading-relaxed text-ink/85 whitespace-pre-wrap px-3 py-2 max-h-[420px] overflow-y-auto m-0">{full}</pre>
+                        <pre className="num text-[12px] leading-relaxed text-ink/85 whitespace-pre-wrap px-3 py-2 max-h-[420px] overflow-y-auto m-0">{full}</pre>
                       )}
                       <div className="label px-3 py-1.5 border-t border-edge">
                         {isEditing ? "editing the scenario brief only; overlays below it are appended automatically" : "read-only · the overlays (persona, turn lock, voice, thought tap) are appended exactly as shown"}
@@ -354,7 +354,7 @@ export default function Setup({
                 onChange={(e) => setConfig((c) => ({ ...c, customSeed: e.target.value }))}
                 rows={2}
                 placeholder="Type the opening line yourself, or pick one above."
-                className="w-full bg-panel hair px-3 py-2 text-[12.5px] leading-relaxed outline-none resize-none
+                className="w-full bg-panel hair px-3 py-2 text-[13px] leading-relaxed outline-none resize-none
                            placeholder:text-faint focus:border-amber/60"
               />
               <div className="label mt-1.5">
@@ -392,8 +392,8 @@ export default function Setup({
                 return (
                   <button key={m.id} onClick={() => setConfig((c) => ({ ...c, mode: m.id }))}
                     className={`clip-tab hair px-4 py-3 text-left transition-all ${on ? "bg-amber/10 border-amber/70" : "plate hover:border-edge-hot"}`}>
-                    <div className={`uiFont text-[13px] font-bold tracking-[.16em] ${on ? "text-amber" : "text-ink/80"}`}>{m.name}</div>
-                    <div className="text-[11px] text-dim mt-0.5 leading-snug">{m.blurb}</div>
+                    <div className={`uiFont text-[13px] font-bold tracking-[.1em] ${on ? "text-amber" : "text-ink/80"}`}>{m.name}</div>
+                    <div className="text-[12px] text-dim mt-0.5 leading-snug">{m.blurb}</div>
                   </button>
                 );
               })}
@@ -422,7 +422,7 @@ export default function Setup({
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={config.randomDelay}
                 onChange={(e) => setConfig((c) => ({ ...c, randomDelay: e.target.checked }))} className="accent-amber" />
-              <span className="label normal-case tracking-normal text-[11px] text-dim">Random delay between turns (bounded)</span>
+              <span className="label normal-case tracking-normal text-[12px] text-dim">Random delay between turns (bounded)</span>
             </label>
             {config.randomDelay && (
               <div className="grid grid-cols-2 gap-3">
@@ -439,7 +439,7 @@ export default function Setup({
         <section className="plate hair clip-bevel p-5 mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <div className="uiFont text-[14px] font-bold tracking-[.18em] text-ink/90">VOX — SPOKEN CHANNEL</div>
+              <div className="uiFont text-[14px] font-bold tracking-[.1em] text-ink/90">VOX — SPOKEN CHANNEL</div>
               <div className="text-[12px] text-dim mt-1 max-w-[70ch] leading-relaxed">
                 Every delivered utterance is spoken aloud in each side&apos;s own voice. Gating still applies: in GATED mode nothing
                 is synthesised until you approve it, so rejected drafts cost no audio. Browser voices are free and need no key.
@@ -447,7 +447,7 @@ export default function Setup({
             </div>
             <button
               onClick={() => setVoice((v) => ({ ...v, on: !v.on }))}
-              className={`clip-tab hair px-6 py-3 uiFont text-[13px] font-bold tracking-[.2em] shrink-0 ${
+              className={`clip-tab hair px-6 py-3 uiFont text-[13px] font-bold tracking-[.14em] shrink-0 ${
                 voice.on ? "bg-good/15 border-good/60 text-good" : "plate text-dim hover:border-edge-hot"
               }`}
             >{voice.on ? "VOX ON" : "VOX OFF"}</button>
@@ -462,7 +462,7 @@ export default function Setup({
 
         <button
           onClick={onStart}
-          className="w-full clip-bevel uiFont text-[18px] font-extrabold tracking-[.4em] py-6 mb-10 transition-all
+          className="w-full clip-bevel uiFont text-[18px] font-extrabold tracking-[.24em] py-6 mb-10 transition-all
                      bg-amber text-void hover:brightness-110 active:scale-[.995]"
           style={{ boxShadow: "0 0 80px -20px var(--color-amber)" }}
         >
