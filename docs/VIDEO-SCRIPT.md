@@ -96,7 +96,7 @@ Every visual below is real UI you can capture from `localhost:3400`. Timecodes a
 
 ### 1:56 — CLOSE (4s)
 
-**VISUAL:** Logo mark. URL. `github.com/craigkitterman/model-talk` · MIT.
+**VISUAL:** Logo mark. URL. `modeltalk.dev` · `github.com/craigkitterman/model-talk` · MIT.
 
 **VO:**
 > It's open source. Bring your own keys. Go sit on the wire.

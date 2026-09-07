@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://modeltalk-site.web.app"><b>modeltalk-site.web.app</b></a> &nbsp;·&nbsp;
+  <a href="https://modeltalk.dev"><b>modeltalk.dev</b></a> &nbsp;·&nbsp;
   MIT &nbsp;·&nbsp; runs on localhost &nbsp;·&nbsp; bring your own keys
 </p>
 
