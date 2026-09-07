@@ -11,8 +11,7 @@
     "experiment": "node scripts/experiment.mjs",
     "tokens": "node scripts/sync-tokens.mjs",
     "predev": "node scripts/sync-tokens.mjs",
-    "prebuild": "node scripts/sync-tokens.mjs",
-    "emu": "firebase emulators:start --only auth,firestore --project modeltalk-site"
+    "prebuild": "node scripts/sync-tokens.mjs"
   },
   "dependencies": {
     "next": "15.5.4",
