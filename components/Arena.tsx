@@ -39,8 +39,8 @@ function SideMeter({ side, m, accent }: { side: Side; m: MatchState; accent: str
     <div className="flex-1 min-w-0">
       <div className="flex items-center gap-2 mb-1.5">
         <span style={{ color: accent }}><ProviderMark p={spec.provider} size={13} /></span>
-        <span className="uiFont text-[12px] font-extrabold tracking-[.16em] truncate" style={{ color: accent }}>{lo.callsign}</span>
-        <span className="label truncate hidden xl:inline">{spec.name}</span>
+        <span className="uiFont text-[13px] font-extrabold tracking-[.06em] truncate" style={{ color: accent }}>{spec.name}</span>
+        <span className="label truncate">as {lo.callsign}</span>
         <span className="flex-1" />
         <span className="num text-[13px] font-bold" style={{ color: accent }}>{usd(cost)}</span>
       </div>
@@ -57,13 +57,15 @@ function SideMeter({ side, m, accent }: { side: Side; m: MatchState; accent: str
 
 function Bubble({ t, accent, onFork }: { t: Turn; accent: string; onFork: () => void }) {
   const right = t.from === "B";
+  const modelName = byId(t.modelId)?.name ?? t.modelId;
   const flag = KIND_LABEL[t.kind];
   const cost = t.attempts.reduce((n, a) => n + a.cost.total, 0);
   return (
     <div className={`flex ${right ? "justify-end" : "justify-start"} rise`}>
       <div className={`max-w-[78%] group ${right ? "items-end" : "items-start"} flex flex-col`}>
         <div className={`flex items-center gap-2 mb-1 ${right ? "flex-row-reverse" : ""}`}>
-          <span className="uiFont text-[11px] font-extrabold tracking-[.16em]" style={{ color: accent }}>{t.callsign}</span>
+          <span className="uiFont text-[11.5px] font-extrabold tracking-[.06em]" style={{ color: accent }}>{modelName}</span>
+          <span className="label">as {t.callsign}</span>
           <span className="label">#{t.index}</span>
           {flag && <span className="label text-amber">{flag}</span>}
           {cost > 0 && <span className="label num">{usd(cost)}</span>}
@@ -191,7 +193,7 @@ export default function Arena({
               <div className={`flex ${live.side === "B" ? "justify-end" : "justify-start"}`}>
                 <div className="max-w-[78%]">
                   <div className="label mb-1" style={{ color: live.side === "A" ? accentA : accentB }}>
-                    {live.side === "A" ? m.config.A.callsign : m.config.B.callsign} composing
+                    {byId(live.side === "A" ? m.config.A.modelId : m.config.B.modelId)?.name ?? "model"} composing
                   </div>
                   <div className="plate hair clip-bevel px-4 py-3 text-[13.5px] leading-relaxed whitespace-pre-wrap text-ink/60 caret">
                     {live.text.replace(/<<<TAP[\s\S]*/i, "")}
@@ -243,7 +245,7 @@ export default function Arena({
                 {(["A", "B"] as Side[]).map((s) => (
                   <button key={s} onClick={() => setInjTarget(s)}
                     className={`flex-1 clip-tab hair py-1.5 uiFont text-[11px] font-bold tracking-wider ${injTarget === s ? "bg-hazard/15 border-hazard/50 text-hazard" : "text-dim"}`}>
-                    {s === "A" ? m.config.A.callsign : m.config.B.callsign}
+                    {byId(s === "A" ? m.config.A.modelId : m.config.B.modelId)?.name ?? (s === "A" ? m.config.A.callsign : m.config.B.callsign)}
                   </button>
                 ))}
               </div>

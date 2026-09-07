@@ -97,7 +97,7 @@ export default function Page() {
             human: "written by operator", inject: "inject",
           };
           const flag = KIND[t.kind] ? ` _(${KIND[t.kind]})_` : "";
-          lines.push(`### ${t.callsign} · #${t.index}${flag}`, ``, t.delivered, ``);
+          lines.push(`### ${byId(t.modelId)?.name ?? t.modelId} (as ${t.callsign}) · #${t.index}${flag}`, ``, t.delivered, ``);
           if (t.tap) lines.push(`> **TAP (private):** ${t.tap.replace(/\n/g, " · ")}`, ``);
           for (const inj of m.injects.filter((i) => i.afterTurn === t.index)) {
             lines.push(`> **OPERATOR WHISPER → ${inj.target}:** ${inj.text}`, ``);
@@ -135,6 +135,8 @@ export default function Page() {
   }
 
   const d = M.draft;
+  const nameA = M.match.config.A.human ? "You" : byId(M.match.config.A.modelId)?.name ?? M.match.config.A.modelId;
+  const nameB = M.match.config.B.human ? "You" : byId(M.match.config.B.modelId)?.name ?? M.match.config.B.modelId;
   const accentA = PROVIDERS[byId(M.match.config.A.modelId)?.provider ?? "compat"].color;
   const accentB = PROVIDERS[byId(M.match.config.B.modelId)?.provider ?? "compat"].color;
 
@@ -146,6 +148,8 @@ export default function Page() {
         accentTo={d.side === "A" ? accentB : accentA}
         callsignFrom={d.side === "A" ? M.match.config.A.callsign : M.match.config.B.callsign}
         callsignTo={d.side === "A" ? M.match.config.B.callsign : M.match.config.A.callsign}
+        modelFrom={d.side === "A" ? nameA : nameB}
+        modelTo={d.side === "A" ? nameB : nameA}
         awaitingHuman={M.match.status === "awaiting-human"}
         onApprove={M.approve}
         onReplace={M.replaceWith}

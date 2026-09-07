@@ -10,12 +10,13 @@ import { usd } from "@/lib/cost";
  * conversation above it, then flies out to the receiver on approve.
  */
 export default function Interceptor({
-  draft, accentFrom, accentTo, callsignFrom, callsignTo, awaitingHuman,
+  draft, accentFrom, accentTo, callsignFrom, callsignTo, modelFrom, modelTo, awaitingHuman,
   onApprove, onReplace, onRegenerate, onCancel, micSupported,
 }: {
   draft: Draft;
   accentFrom: string; accentTo: string;
   callsignFrom: string; callsignTo: string;
+  modelFrom: string; modelTo: string;
   awaitingHuman: boolean;
   onApprove: (text?: string) => void;
   onReplace: (text: string) => void;
@@ -77,9 +78,9 @@ export default function Interceptor({
 
           <div className="flex items-center justify-between px-4 py-2 border-b border-edge">
             <div className="flex items-center gap-2.5 min-w-0">
-              <span className="uiFont text-[12px] font-extrabold tracking-[.18em] shrink-0" style={{ color: accentFrom }}>{callsignFrom}</span>
+              <span className="uiFont text-[12px] font-extrabold tracking-[.06em] shrink-0" style={{ color: accentFrom }}>{modelFrom} <span className="label">as {callsignFrom}</span></span>
               <span className="text-faint text-[12px] shrink-0">──▶</span>
-              <span className="uiFont text-[12px] font-extrabold tracking-[.18em] shrink-0" style={{ color: accentTo }}>{callsignTo}</span>
+              <span className="uiFont text-[12px] font-extrabold tracking-[.06em] shrink-0" style={{ color: accentTo }}>{modelTo} <span className="label">as {callsignTo}</span></span>
               <span className="label ml-2 truncate">
                 {awaitingHuman ? "your line · nothing sends until you do" : "held mid-wire · not yet delivered"}
               </span>
@@ -112,7 +113,7 @@ export default function Interceptor({
               onKeyDown={onKey}
               rows={rows}
               placeholder={awaitingHuman ? "Your line. Type it, or hit the mic. ⌘/Ctrl+Enter to send." : ""}
-              aria-label={awaitingHuman ? "Your line" : `Message from ${callsignFrom} held for approval; edit before sending`}
+              aria-label={awaitingHuman ? "Your line" : `Message from ${modelFrom} (${callsignFrom}) held for approval; edit before sending`}
               disabled={flying || draft.streaming}
               className="w-full bg-deck/70 hair px-3.5 py-2.5 text-[13.5px] leading-relaxed outline-none resize-none
                          font-[family-name:var(--font-body)] placeholder:text-faint focus:border-amber/60"

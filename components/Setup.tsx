@@ -80,7 +80,7 @@ function Fighter({
         style={{ color: accent }}
         aria-label={`Callsign for combatant ${side}`}
       />
-      <div className="label mb-4">callsign · shown to the other side instead of the model name</div>
+      <div className="label mb-4">callsign · the only name the <em>other model</em> ever sees. You always see the real model below.</div>
 
       <div className="flex items-center gap-3 mb-3">
         <div className="shrink-0 grid place-items-center w-10 h-10 hair clip-tab" style={{ color: accent, background: "var(--color-deck)" }}>
@@ -102,7 +102,10 @@ function Fighter({
         </select>
       </div>
 
-      <div className="num text-[10px] text-faint mb-3 truncate">{spec.id}</div>
+      <div className="flex items-baseline justify-between gap-3 mb-3">
+        <span className="uiFont text-[15px] font-extrabold tracking-[.04em]" style={{ color: accent }}>{spec.name}</span>
+        <span className="num text-[10px] text-faint truncate">{spec.id}</span>
+      </div>
 
       <div className="mb-4">
         <Stat k="context" v={compact(spec.contextWindow)} />
