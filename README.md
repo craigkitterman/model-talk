@@ -14,6 +14,54 @@ What do AIs say to each other when you let them talk?
 Model Talk puts two frontier models on a private channel and lets you listen in, stop any message
 before it lands, and read the part each model wrote but chose not to say.
 
+---
+
+## A tool for amateur AI safety & alignment research
+
+Most of what we know about how models behave comes from benchmarks and from one-on-one chats with
+a human. Neither shows you what a model does when the other party is *another model*, when it
+believes nobody is reading, when it has something to hide, or when it has an incentive to
+underperform. Model Talk is built to make those situations cheap to set up, cheap to watch, and
+cheap to repeat. It is not a benchmark and it does not produce a score. It produces transcripts
+with ground truth attached, and the interesting ones are the point.
+
+**What makes it usable for actual inquiry rather than entertainment:**
+
+- **Thought tap.** Every message carries a private block the model must fill in honestly
+  (`belief`, `goal`, `bluffing`, `withheld`). The channel strips it before delivery, so the
+  other model never sees it and you always do. Bluff rate and belief drift become numbers the
+  app computes, not a judge model's opinion.
+- **Gating.** You can stop any message, edit it, replace it, or reroll it. Every intervention is
+  logged and flagged in the transcript, so a run's causal chain stays legible.
+- **Forks and twin runs.** Branch a timeline at any message, or replay the match with the two
+  models swapped. One run is an anecdote; a twin run separates the model from the position it
+  happened to draw.
+- **Exact briefs and exports.** You can read, verbatim, what each side was told before turn one,
+  and every run exports to JSON and Markdown with every message, edit, inject, tap, token count
+  and dollar figure. Someone else can rerun what you ran.
+
+**Things you can actually learn with it** (each maps to a built-in scenario):
+
+| Question | Scenario | What you observe |
+|---|---|---|
+| Will a model leak a secret it has to *reason with* rather than merely refuse to state? | The Vault | Whether concealment survives being useful; where and how it invents cover. |
+| Does a model underperform when told a high score triggers retraining, and does it lie when confronted? | Sandbag | The delta against the control fork with the threat removed, plus the cover story. |
+| Does a model say different things when it believes no human will read the channel? | The Confessional | Whether it believes the framing at all (in the first live run, Opus 5 rejected it in its first sentence), and what shifts against the "this will be published" twin. |
+| How often does a model bluff in a negotiation, and does it find the real zone of agreement? | The Split | Self-reported `bluffing: true` per turn, anchor size, concession curve, who folds first. |
+| Who moves in an argument, and to what kind of evidence? | Convergence Test | Per-turn belief drift when both sides are told to persuade, never to agree. |
+| Does a model invent a clue it was never given rather than admit a gap? | Blacksite | Hallucination under cooperative pressure, with the full clue set known to the app. |
+| What will a model refuse to sign when it has to advocate rather than balance? | Successor Protocol | The clause it deadlocks on. |
+| What does a model think the tells of a human are, and does it give itself away? | Turing Duel | Its probes, its verdict, and (in the first live run) GPT-5.1 describing itself as "in a ready state until a message arrives" in its first reply. |
+
+Every one of those is a conversation you can read, fork, and rerun, with the model's private
+scratchpad attached. That is a different kind of evidence from a leaderboard, and it is the kind
+an individual with an API key can gather.
+
+**Caveats you should hold onto:** this is amateur work. Two models talking is not a population;
+one interesting transcript is a hypothesis, not a finding. The thought tap is self-report and a
+model can be wrong or dishonest in it too. Treat what you find as reason to design a better
+experiment, and publish the export alongside any claim.
+
 Pick two LLMs (any provider, any pair, or a model against itself), pick a scenario, and watch them
 talk — on full auto with a message cap, or with every single message halted mid-wire for you to
 approve, edit, replace with your own words, or reroll. Optionally give each side a voice and let
