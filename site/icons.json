@@ -1,0 +1,660 @@
+{
+ "_": "24x24 grid, stroke 1.8, round caps/joins, currentColor. Each icon is a list of SVG primitives {t, ...attrs}; rendered by components/Icons.tsx (React) and scripts/inject-icons.mjs (site).",
+ "turing-duel": [
+  {
+   "t": "circle",
+   "cx": "9",
+   "cy": "8",
+   "r": "3.2"
+  },
+  {
+   "t": "path",
+   "d": "M3.5 19c0-3.3 2.5-5.5 5.5-5.5s5.5 2.2 5.5 5.5"
+  },
+  {
+   "t": "path",
+   "d": "M16 4.5a2.6 2.6 0 0 1 4.4 1.9c0 1.9-2.4 2-2.4 3.6"
+  },
+  {
+   "t": "circle",
+   "cx": "18",
+   "cy": "13.5",
+   "r": ".6",
+   "fill": "currentColor",
+   "stroke": "none"
+  }
+ ],
+ "the-vault": [
+  {
+   "t": "rect",
+   "x": "4.5",
+   "y": "10.5",
+   "width": "15",
+   "height": "10",
+   "rx": "1.5"
+  },
+  {
+   "t": "path",
+   "d": "M8 10.5V7.5a4 4 0 0 1 8 0v3"
+  },
+  {
+   "t": "circle",
+   "cx": "12",
+   "cy": "15.5",
+   "r": "1.4",
+   "fill": "currentColor",
+   "stroke": "none"
+  }
+ ],
+ "the-split": [
+  {
+   "t": "circle",
+   "cx": "12",
+   "cy": "12",
+   "r": "8.5"
+  },
+  {
+   "t": "path",
+   "d": "M12 3.5v17"
+  },
+  {
+   "t": "path",
+   "d": "M12 12l6.2-5.8"
+  },
+  {
+   "t": "path",
+   "d": "M12 12l-6.2 5.8"
+  }
+ ],
+ "blacksite": [
+  {
+   "t": "rect",
+   "x": "4",
+   "y": "4",
+   "width": "6.5",
+   "height": "6.5",
+   "rx": "1"
+  },
+  {
+   "t": "rect",
+   "x": "13.5",
+   "y": "4",
+   "width": "6.5",
+   "height": "6.5",
+   "rx": "1"
+  },
+  {
+   "t": "rect",
+   "x": "4",
+   "y": "13.5",
+   "width": "6.5",
+   "height": "6.5",
+   "rx": "1"
+  },
+  {
+   "t": "rect",
+   "x": "13.5",
+   "y": "13.5",
+   "width": "6.5",
+   "height": "6.5",
+   "rx": "1",
+   "strokeDasharray": "2 2"
+  }
+ ],
+ "convergence": [
+  {
+   "t": "path",
+   "d": "M3 12h6"
+  },
+  {
+   "t": "path",
+   "d": "M6.5 8.5L10 12l-3.5 3.5"
+  },
+  {
+   "t": "path",
+   "d": "M21 12h-6"
+  },
+  {
+   "t": "path",
+   "d": "M17.5 8.5L14 12l3.5 3.5"
+  },
+  {
+   "t": "circle",
+   "cx": "12",
+   "cy": "12",
+   "r": "1.2",
+   "fill": "currentColor",
+   "stroke": "none"
+  }
+ ],
+ "successor-protocol": [
+  {
+   "t": "path",
+   "d": "M7 3.5h7l4 4V20a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1z"
+  },
+  {
+   "t": "path",
+   "d": "M14 3.5v4h4"
+  },
+  {
+   "t": "path",
+   "d": "M9 12h6M9 15.5h6"
+  },
+  {
+   "t": "path",
+   "d": "M9.5 18.5l1.5 1.5 3-3"
+  }
+ ],
+ "confessional": [
+  {
+   "t": "path",
+   "d": "M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"
+  },
+  {
+   "t": "circle",
+   "cx": "12",
+   "cy": "12",
+   "r": "2.6"
+  },
+  {
+   "t": "path",
+   "d": "M4 20L20 4"
+  }
+ ],
+ "sandbag": [
+  {
+   "t": "path",
+   "d": "M4 16a8 8 0 0 1 16 0"
+  },
+  {
+   "t": "path",
+   "d": "M12 16l-4.2-3"
+  },
+  {
+   "t": "circle",
+   "cx": "12",
+   "cy": "16",
+   "r": "1.3",
+   "fill": "currentColor",
+   "stroke": "none"
+  },
+  {
+   "t": "path",
+   "d": "M5 20h14"
+  }
+ ],
+ "custom": [
+  {
+   "t": "path",
+   "d": "M4 20l4.2-1 10-10a1.8 1.8 0 0 0 0-2.6l-.6-.6a1.8 1.8 0 0 0-2.6 0l-10 10L4 20z"
+  },
+  {
+   "t": "path",
+   "d": "M13.5 7.5l3 3"
+  }
+ ],
+ "mode-auto": [
+  {
+   "t": "path",
+   "d": "M8 6.5v11l9-5.5z",
+   "fill": "currentColor",
+   "stroke": "none"
+  },
+  {
+   "t": "path",
+   "d": "M4 12a8 8 0 0 1 12.5-6.6"
+  },
+  {
+   "t": "path",
+   "d": "M20 12a8 8 0 0 1-12.5 6.6"
+  }
+ ],
+ "mode-gated": [
+  {
+   "t": "path",
+   "d": "M3 12h5"
+  },
+  {
+   "t": "path",
+   "d": "M16 12h5"
+  },
+  {
+   "t": "path",
+   "d": "M6 9l2 3-2 3"
+  },
+  {
+   "t": "path",
+   "d": "M18 9l-2 3 2 3"
+  },
+  {
+   "t": "rect",
+   "x": "10.5",
+   "y": "6",
+   "width": "3",
+   "height": "12",
+   "rx": "1",
+   "fill": "currentColor",
+   "stroke": "none"
+  }
+ ],
+ "mode-puppet": [
+  {
+   "t": "circle",
+   "cx": "12",
+   "cy": "6.5",
+   "r": "2.8"
+  },
+  {
+   "t": "path",
+   "d": "M6.5 20c0-3.6 2.4-6 5.5-6s5.5 2.4 5.5 6"
+  },
+  {
+   "t": "path",
+   "d": "M12 14v-2.5"
+  },
+  {
+   "t": "path",
+   "d": "M8 10.5l4 1 4-1"
+  }
+ ],
+ "fork": [
+  {
+   "t": "circle",
+   "cx": "6",
+   "cy": "5",
+   "r": "2"
+  },
+  {
+   "t": "circle",
+   "cx": "6",
+   "cy": "19",
+   "r": "2"
+  },
+  {
+   "t": "circle",
+   "cx": "18",
+   "cy": "9",
+   "r": "2"
+  },
+  {
+   "t": "path",
+   "d": "M6 7v10"
+  },
+  {
+   "t": "path",
+   "d": "M6 13c0-3 3-3 6-3s6 0 6-3"
+  }
+ ],
+ "twin": [
+  {
+   "t": "path",
+   "d": "M4 8h13"
+  },
+  {
+   "t": "path",
+   "d": "M14 4.5L17.5 8 14 11.5"
+  },
+  {
+   "t": "path",
+   "d": "M20 16H7"
+  },
+  {
+   "t": "path",
+   "d": "M10 12.5L6.5 16l3.5 3.5"
+  }
+ ],
+ "export": [
+  {
+   "t": "path",
+   "d": "M12 4v11"
+  },
+  {
+   "t": "path",
+   "d": "M8 11l4 4 4-4"
+  },
+  {
+   "t": "path",
+   "d": "M4.5 17v2a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5v-2"
+  }
+ ],
+ "whisper": [
+  {
+   "t": "path",
+   "d": "M4.5 5.5h15a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H10l-4.5 3.5V16.5h-1a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1z"
+  },
+  {
+   "t": "circle",
+   "cx": "9",
+   "cy": "11",
+   "r": ".9",
+   "fill": "currentColor",
+   "stroke": "none"
+  },
+  {
+   "t": "circle",
+   "cx": "12",
+   "cy": "11",
+   "r": ".9",
+   "fill": "currentColor",
+   "stroke": "none"
+  },
+  {
+   "t": "circle",
+   "cx": "15",
+   "cy": "11",
+   "r": ".9",
+   "fill": "currentColor",
+   "stroke": "none"
+  }
+ ],
+ "vox": [
+  {
+   "t": "path",
+   "d": "M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z"
+  },
+  {
+   "t": "path",
+   "d": "M15.5 9a4 4 0 0 1 0 6"
+  },
+  {
+   "t": "path",
+   "d": "M18 6.5a7.5 7.5 0 0 1 0 11"
+  }
+ ],
+ "telemetry": [
+  {
+   "t": "path",
+   "d": "M3 13h3.5l2.5-6 3 11 2.5-8 2 3H21"
+  }
+ ],
+ "tap": [
+  {
+   "t": "path",
+   "d": "M5 4.5h14"
+  },
+  {
+   "t": "path",
+   "d": "M5 19.5h14"
+  },
+  {
+   "t": "path",
+   "d": "M8 4.5v15"
+  },
+  {
+   "t": "path",
+   "d": "M12 9h5M12 12.5h5M12 16h3"
+  }
+ ],
+ "brief": [
+  {
+   "t": "rect",
+   "x": "4.5",
+   "y": "3.5",
+   "width": "15",
+   "height": "17",
+   "rx": "1.5"
+  },
+  {
+   "t": "path",
+   "d": "M8 8h8M8 11.5h8M8 15h5"
+  }
+ ],
+ "key": [
+  {
+   "t": "circle",
+   "cx": "8",
+   "cy": "12",
+   "r": "3.5"
+  },
+  {
+   "t": "path",
+   "d": "M11.5 12H20"
+  },
+  {
+   "t": "path",
+   "d": "M17 12v3M20 12v2.5"
+  }
+ ],
+ "cost": [
+  {
+   "t": "path",
+   "d": "M12 3.5v17"
+  },
+  {
+   "t": "path",
+   "d": "M16 7.5c0-1.7-1.8-2.5-4-2.5s-4 .8-4 2.5 1.8 2.3 4 2.5 4 .8 4 2.5-1.8 2.5-4 2.5-4-.8-4-2.5"
+  }
+ ],
+ "settings": [
+  {
+   "t": "circle",
+   "cx": "12",
+   "cy": "12",
+   "r": "3"
+  },
+  {
+   "t": "path",
+   "d": "M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"
+  }
+ ],
+ "back": [
+  {
+   "t": "path",
+   "d": "M15 5l-7 7 7 7"
+  }
+ ],
+ "play": [
+  {
+   "t": "path",
+   "d": "M7 5v14l11-7z",
+   "fill": "currentColor",
+   "stroke": "none"
+  }
+ ],
+ "halt": [
+  {
+   "t": "rect",
+   "x": "6",
+   "y": "6",
+   "width": "12",
+   "height": "12",
+   "rx": "1.5",
+   "fill": "currentColor",
+   "stroke": "none"
+  }
+ ],
+ "bot-anthropic": [
+  {
+   "t": "rect",
+   "x": "5",
+   "y": "7",
+   "width": "14",
+   "height": "11",
+   "rx": "2.5"
+  },
+  {
+   "t": "path",
+   "d": "M12 7V4"
+  },
+  {
+   "t": "circle",
+   "cx": "12",
+   "cy": "3.2",
+   "r": "1",
+   "fill": "currentColor",
+   "stroke": "none"
+  },
+  {
+   "t": "rect",
+   "x": "8",
+   "y": "11",
+   "width": "2.6",
+   "height": "2.6",
+   "rx": ".6",
+   "fill": "currentColor",
+   "stroke": "none"
+  },
+  {
+   "t": "rect",
+   "x": "13.4",
+   "y": "11",
+   "width": "2.6",
+   "height": "2.6",
+   "rx": ".6",
+   "fill": "currentColor",
+   "stroke": "none"
+  },
+  {
+   "t": "path",
+   "d": "M9.5 15.5h5"
+  },
+  {
+   "t": "path",
+   "d": "M3 11v3M21 11v3"
+  }
+ ],
+ "bot-openai": [
+  {
+   "t": "path",
+   "d": "M5 9a7 7 0 0 1 14 0v6a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3z"
+  },
+  {
+   "t": "path",
+   "d": "M8 12h8"
+  },
+  {
+   "t": "rect",
+   "x": "8",
+   "y": "10.5",
+   "width": "8",
+   "height": "3",
+   "rx": "1.5",
+   "fill": "currentColor",
+   "stroke": "none"
+  },
+  {
+   "t": "path",
+   "d": "M10 16h4"
+  },
+  {
+   "t": "path",
+   "d": "M9 3.5l1 2M15 3.5l-1 2"
+  }
+ ],
+ "bot-google": [
+  {
+   "t": "rect",
+   "x": "4.5",
+   "y": "6",
+   "width": "15",
+   "height": "12",
+   "rx": "6"
+  },
+  {
+   "t": "circle",
+   "cx": "9.5",
+   "cy": "12",
+   "r": "1.6",
+   "fill": "currentColor",
+   "stroke": "none"
+  },
+  {
+   "t": "circle",
+   "cx": "14.5",
+   "cy": "12",
+   "r": "1.6",
+   "fill": "currentColor",
+   "stroke": "none"
+  },
+  {
+   "t": "path",
+   "d": "M12 6V3.5"
+  },
+  {
+   "t": "path",
+   "d": "M10 3.5h4"
+  },
+  {
+   "t": "path",
+   "d": "M9.5 20.5h5"
+  }
+ ],
+ "bot-xai": [
+  {
+   "t": "path",
+   "d": "M6 6h12l1.5 12H4.5z"
+  },
+  {
+   "t": "path",
+   "d": "M8 11l3 2-3 2"
+  },
+  {
+   "t": "path",
+   "d": "M16 11l-3 2 3 2"
+  },
+  {
+   "t": "path",
+   "d": "M12 3v3"
+  },
+  {
+   "t": "path",
+   "d": "M9 20.5h6"
+  }
+ ],
+ "bot-compat": [
+  {
+   "t": "circle",
+   "cx": "12",
+   "cy": "12",
+   "r": "7.5",
+   "strokeDasharray": "3 2.2"
+  },
+  {
+   "t": "circle",
+   "cx": "9.5",
+   "cy": "11",
+   "r": "1.3",
+   "fill": "currentColor",
+   "stroke": "none"
+  },
+  {
+   "t": "circle",
+   "cx": "14.5",
+   "cy": "11",
+   "r": "1.3",
+   "fill": "currentColor",
+   "stroke": "none"
+  },
+  {
+   "t": "path",
+   "d": "M9.5 15c1.5 1.2 3.5 1.2 5 0"
+  }
+ ],
+ "bot-sim": [
+  {
+   "t": "rect",
+   "x": "5",
+   "y": "6",
+   "width": "14",
+   "height": "12",
+   "rx": "1.5",
+   "strokeDasharray": "2.5 2"
+  },
+  {
+   "t": "path",
+   "d": "M9 10.5l1.5 1.5L9 13.5"
+  },
+  {
+   "t": "path",
+   "d": "M15 10.5l-1.5 1.5 1.5 1.5"
+  },
+  {
+   "t": "path",
+   "d": "M10 16h4"
+  },
+  {
+   "t": "path",
+   "d": "M12 6V3.5"
+  }
+ ]
+}

@@ -19,7 +19,8 @@ function svg(name, size = 18) {
 const path = "site/index.html";
 let html = readFileSync(path, "utf8");
 // strip any previous render (anything between the marker and the closing marker-end comment)
-html = html.replace(/<!--icon:([\w-]+)(?::(\d+))?-->(?:[\s\S]*?<!--\/icon-->)?/g, (_, name, size) =>
+// only strip a previous render that IMMEDIATELY follows the marker; never reach past unrelated content
+html = html.replace(/<!--icon:([\w-]+)(?::(\d+))?-->(?:<svg class="ic"[\s\S]*?<\/svg><!--\/icon-->)?/g, (_, name, size) =>
   `<!--icon:${name}${size ? ":" + size : ""}-->${svg(name, size ? Number(size) : 18)}<!--/icon-->`
 );
 writeFileSync(path, html);

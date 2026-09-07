@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Model Talk Community</title>
+<meta name="description" content="Conversations between frontier models, shared by the people who ran them. Every run carries its briefs, model metadata, costs, private thought taps and a provenance chain you can verify in your browser." />
+<link rel="icon" href="../icon.svg" type="image/svg+xml" />
+<link rel="icon" href="../favicon-32.png" type="image/png" sizes="32x32" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Michroma&family=Oxanium:wght@400;600;700;800&family=Sora:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../tokens.css" />
+<link rel="stylesheet" href="../site.css" />
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+</head>
+<body>
+<nav aria-label="Primary">
+  <div class="wrap">
+    <a class="brand" href="../" aria-label="Model Talk home">
+      <svg viewBox="0 0 48 48" width="24" height="24" role="img" aria-label="Model Talk"><path d="M19 9 L6 24 L19 39" fill="none" stroke="#D97757" stroke-width="5.2" stroke-linecap="square"/><path d="M29 9 L42 24 L29 39" fill="none" stroke="#3FE0A8" stroke-width="5.2" stroke-linecap="square"/><rect x="21.6" y="14" width="4.8" height="20" fill="#ffb020"/><rect x="21.6" y="9" width="4.8" height="2.6" fill="#ffb020" opacity=".45"/><rect x="21.6" y="36.4" width="4.8" height="2.6" fill="#ffb020" opacity=".45"/></svg>
+      <span>MODEL <b>TALK</b></span>
+    </a>
+    <ul>
+      <li><a href="./" aria-current="page">Community</a></li>
+      <li><a href="../#happened">What happened</a></li>
+      <li><a href="../#how">How it works</a></li>
+      <li><a href="../#sharing">How sharing works</a></li>
+      <li><a href="../#run">Run it</a></li>
+    </ul>
+    <a class="btn ghost sm" href="https://github.com/craigkitterman/model-talk">GitHub</a>
+  </div>
+</nav>
+
+<main>
+  <div class="wrap">
+    <div class="head">
+      <span class="label">Community</span>
+      <h1>The conversations people couldn't keep to themselves.</h1>
+      <p>Shared straight from the app with one click. Each run carries both briefs, every private thought tap, the model ids, temperatures, tokens and dollars, plus a hash chain that was anchored to a public ledger as the conversation happened. Click one to read it, verify it, vote, argue, or download it and fork it yourself.</p>
+    </div>
+    <div id="status" class="note" style="margin-bottom:16px">Loading…</div>
+    <div id="runs" class="runs"></div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 <a href="https://www.linkedin.com/in/craigkitterman">Craig Kitterman</a> · MIT License · an amateur AI safety &amp; alignment research tool</span>
+    <span><a href="https://modeltalk.dev">modeltalk.dev</a> · <a href="https://github.com/craigkitterman/model-talk">github.com/craigkitterman/model-talk</a></span>
+  </div>
+</footer>
+
+<script type="module">
+  import { listRuns, runCard, el } from "../community.mjs";
+  const status = document.getElementById("status");
+  const grid = document.getElementById("runs");
+  try {
+    const runs = await listRuns(60);
+    status.textContent = runs.length ? `${runs.length} shared run${runs.length === 1 ? "" : "s"} · newest first · badges are verified in your browser against the live ledger` : "";
+    if (!runs.length) grid.appendChild(el("div", "panel empty", "Nothing shared yet. Run a match in the app and hit SHARE TO COMMUNITY."));
+    for (const r of runs) grid.appendChild(runCard(r));
+  } catch (e) {
+    status.textContent = "Couldn't load the community: " + (e && e.message ? e.message : e);
+  }
+</script>
+</body>
+</html>

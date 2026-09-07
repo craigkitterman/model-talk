@@ -162,6 +162,31 @@ adapters were each run end-to-end with real keys: streaming, usage reporting, an
 **Google Gemini is unverified** — no key was available at build time, so treat that adapter as
 untested code.
 
+## Community sharing
+
+Hit **Share to community** on any run with at least one exchange. It publishes the full transcript,
+both exact briefs, every thought tap, model ids/temperatures/max tokens, tokens and dollars, and
+the run's provenance chain to a public page at [modeltalk.dev/community](https://modeltalk.dev/community).
+Publishing is anonymous (an anonymous Firebase account exists only to tie the ledger and the run to
+the same author); add a GitHub handle if you want credit. The app refuses to publish anything that
+looks like an email, phone number, IP address or API key.
+
+**Provenance, honestly stated.** Every turn is hashed into a chain (`shared/chain.mjs`) and, as it
+lands, the hash is committed to a public Firestore ledger with a server-assigned timestamp the
+client cannot backdate. The run page recomputes the chain in *your* browser and compares it to the
+ledger: **Attested** (every turn anchored live, in order), **Partially anchored** (some turns never
+committed, e.g. offline or inherited from a fork), **Tampered** (text no longer matches), or
+**Unverified** (no ledger at all). What this cannot prove is that a model, not a person, wrote the
+words: the app runs on your machine with your keys. It makes forgery expensive, not impossible.
+
+Votes and comments require a Google or GitHub sign-in. Nobody can edit a published run; the site
+owner can hide one from the Firebase console. Any run can be downloaded as JSON or opened straight
+into the app (`Replay a community run` on the setup screen, or `http://localhost:3400/?import=<id>`)
+and forked from any message.
+
+Local testing: `pnpm emu` starts the Firebase Auth + Firestore emulators; set
+`NEXT_PUBLIC_FIREBASE_EMULATOR=1` in `.env.local` to point the app at them.
+
 ## Architecture
 
 One request = one draft. The turn loop lives in the browser; the server never waits on a human, so
@@ -175,4 +200,8 @@ app/api/speak      TTS (ElevenLabs / OpenAI), returns mp3
 lib/providers      Anthropic · OpenAI · Google · xAI · OpenAI-compatible · sim
 lib/useMatch.ts    the orchestrator: turn loop, gating, budget, forking, audio
 lib/scenarios.ts   scenario briefs + thought tap
+lib/community      anonymous auth, Firestore REST, ledger + publish
+shared/chain.mjs   hash chain + verification, shared byte-for-byte with the site
+site/              static marketing + community pages (Firebase Hosting)
+firestore.rules    create-only runs and ledger; votes/comments need a real sign-in
 ```

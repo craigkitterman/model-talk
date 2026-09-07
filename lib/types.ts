@@ -158,6 +158,12 @@ export interface MatchState {
   parentId?: string;
   forkedAtTurn?: number;
   label?: string;
+  /** provenance: sha256 chain, one entry per turn (see shared/chain.mjs) */
+  chain?: string[];
+  /** a live ledger doc exists for this match id; commits are being anchored */
+  ledgerOpen?: boolean;
+  /** loaded from the community, not generated here */
+  imported?: { id: string; title: string; handle: string | null };
 }
 
 export interface GenerateRequest {

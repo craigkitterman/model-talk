@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit",
     "tokens": "node scripts/sync-tokens.mjs",
     "predev": "node scripts/sync-tokens.mjs",
-    "prebuild": "node scripts/sync-tokens.mjs"
+    "prebuild": "node scripts/sync-tokens.mjs",
+    "emu": "firebase emulators:start --only auth,firestore --project modeltalk-site"
   },
   "dependencies": {
     "next": "15.5.4",

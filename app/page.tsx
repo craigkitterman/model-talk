@@ -5,6 +5,8 @@ import Setup from "@/components/Setup";
 import Arena from "@/components/Arena";
 import Interceptor from "@/components/Interceptor";
 import Settings from "@/components/Settings";
+import Share from "@/components/Share";
+import { fetchRun, type PublishedRun } from "@/lib/community";
 import { DEFAULT_CONFIG, useMatch } from "@/lib/useMatch";
 import type { MatchConfig } from "@/lib/types";
 import { PROVIDERS, byId } from "@/lib/models/catalog";
@@ -56,8 +58,38 @@ export default function Page() {
   const [phase, setPhase] = useState<"setup" | "arena">("setup");
   const [mic, setMic] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [importMsg, setImportMsg] = useState<string | null>(null);
+
+  const loadImported = useCallback((run: PublishedRun) => {
+    M.importRun(run);
+    setPhase("arena");
+    setImportMsg(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [M.importRun]);
+
+  const importById = useCallback(async (raw: string) => {
+    const id = raw.trim().match(/[?&]id=([^&#]+)/)?.[1] ?? raw.trim();
+    if (!id) return;
+    setImportMsg("Fetching…");
+    try {
+      const run = await fetchRun(decodeURIComponent(id));
+      if (!run) { setImportMsg("No run with that id."); return; }
+      loadImported(run);
+    } catch (e) { setImportMsg(e instanceof Error ? e.message : String(e)); }
+  }, [loadImported]);
+
+  const importFile = useCallback(async (file: File) => {
+    try {
+      const run = JSON.parse(await file.text()) as PublishedRun;
+      if (!run?.turns?.length) throw new Error("not a Model Talk run file");
+      loadImported(run);
+    } catch (e) { setImportMsg(e instanceof Error ? e.message : String(e)); }
+  }, [loadImported]);
 
   useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("import");
+    if (id) { void importById(id); history.replaceState(null, "", "/"); }
     setMic(typeof window !== "undefined" && !!((window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition));
     try {
       const raw = localStorage.getItem("modeltalk:config");
@@ -122,6 +154,9 @@ export default function Page() {
       {settings}
       <Setup
         onSettings={() => setSettingsOpen(true)}
+        onImportId={importById}
+        onImportFile={importFile}
+        importMsg={importMsg}
         config={M.config}
         setConfig={M.setConfig}
         scenario={M.scenario}
@@ -164,8 +199,10 @@ export default function Page() {
   return (
     <>
     {settings}
+    {shareOpen && <Share m={M.match} spend={M.spend} voiceOn={M.voice.on} onClose={() => setShareOpen(false)} />}
     <Arena
       onSettings={() => setSettingsOpen(true)}
+      onShare={() => setShareOpen(true)}
       m={M.match}
       live={M.live}
       spend={M.spend}

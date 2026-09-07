@@ -1,0 +1,82 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function isStr(v, max) { return v is string && v.size() <= max; }
+    // votes and comments need an account someone can be held to; anonymous is for publishing only
+    function realUser() {
+      return signedIn() && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+
+    // ── Community runs: create-only, readable by anyone unless hidden ──────
+    match /runs/{runId} {
+      allow get: if resource.data.hidden == false;
+      allow list: if request.query.limit <= 60;
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.v == 1
+        && request.resource.data.hidden == false
+        && request.resource.data.createdAt == request.time
+        && isStr(request.resource.data.title, 140)
+        && isStr(request.resource.data.scenarioId, 64)
+        && isStr(request.resource.data.matchId, 64)
+        && (request.resource.data.handle == null || isStr(request.resource.data.handle, 39))
+        && request.resource.data.turns is list
+        && request.resource.data.turns.size() >= 2
+        && request.resource.data.turns.size() <= 200
+        && request.resource.data.chain is list
+        && request.resource.data.chain.size() == request.resource.data.turns.size();
+      // nobody edits or deletes from the client; moderation happens in the console
+      allow update, delete: if false;
+
+      // ── Votes: one doc per signed-in (non-anonymous) user, id == uid ─────
+      match /votes/{uid} {
+        allow get, list: if true;
+        allow create, update: if realUser() && uid == request.auth.uid
+          && request.resource.data.uid == request.auth.uid
+          && (request.resource.data.value == 1 || request.resource.data.value == -1)
+          && request.resource.data.at == request.time;
+        allow delete: if realUser() && uid == request.auth.uid;
+      }
+
+      // ── Comments: signed-in (Google/GitHub) only; author may delete ──────
+      match /comments/{cid} {
+        allow get, list: if request.query.limit <= 200 || true;
+        allow create: if realUser()
+          && request.resource.data.uid == request.auth.uid
+          && isStr(request.resource.data.text, 2000)
+          && request.resource.data.text.size() >= 1
+          && isStr(request.resource.data.name, 80)
+          && isStr(request.resource.data.provider, 32)
+          && request.resource.data.at == request.time;
+        allow update: if false;
+        allow delete: if realUser() && resource.data.uid == request.auth.uid;
+      }
+    }
+
+    // ── Live ledger: one doc per match, commits appended as turns happen ───
+    // `at` must equal the server's request time, so a client cannot backdate.
+    match /ledger/{matchId} {
+      allow get: if true;
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.createdAt == request.time
+        && isStr(request.resource.data.scenarioId, 64);
+      allow update, delete: if false;
+
+      match /commits/{turnIndex} {
+        allow get, list: if true;
+        allow create: if signedIn()
+          && get(/databases/$(database)/documents/ledger/$(matchId)).data.uid == request.auth.uid
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.at == request.time
+          && request.resource.data.turnIndex is int
+          && string(request.resource.data.turnIndex) == turnIndex
+          && isStr(request.resource.data.hash, 64)
+          && request.resource.data.hash.size() == 64;
+        allow update, delete: if false;
+      }
+    }
+  }
+}

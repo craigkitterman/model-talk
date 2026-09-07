@@ -10,6 +10,7 @@ import { buildSystem } from "@/lib/prompt";
 import { computeCost, estimateUsage } from "@/lib/cost";
 import { forSpeech, splitTap } from "@/lib/tap";
 import { DEFAULT_VOICE_A, DEFAULT_VOICE_B, voiceById } from "@/lib/voice/catalog";
+import { commitTurn, openLedger, type PublishedRun } from "@/lib/community";
 
 export interface Draft {
   side: Side;
@@ -56,7 +57,7 @@ function freshMatch(config: MatchConfig): MatchState {
     const m = byId(id);
     if (m) priceLock[id] = { inputPerM: m.inputPerM, outputPerM: m.outputPerM };
   }
-  return { id: uid(), config, turns: [], injects: [], discarded: [], status: "idle", priceLock };
+  return { id: uid(), config, turns: [], injects: [], discarded: [], status: "idle", priceLock, chain: [] };
 }
 
 /** Merge consecutive same-role messages; providers differ on whether they tolerate runs. */
@@ -87,6 +88,8 @@ export function useMatch() {
   });
 
   const abortRef = useRef<AbortController | null>(null);
+  /** resolves once the ledger doc for the current match exists (or failed); commits wait on it */
+  const ledgerRef = useRef<{ id: string; ready: Promise<boolean> } | null>(null);
   const stopRef = useRef(false);
   /** true while runLoop is executing; a second caller becomes a no-op */
   const loopRef = useRef(false);
@@ -100,6 +103,21 @@ export function useMatch() {
 
   const setDraft = useCallback((d: Draft | null) => { draftRef.current = d; setDraftState(d); }, []);
   const put = useCallback((m: MatchState) => { matchRef.current = m; setMatch(m); }, []);
+
+  /** Extend the provenance chain for the newest turn and anchor it in the live ledger. */
+  const anchor = useCallback(async (m: MatchState, turn: Turn) => {
+    const prev = m.chain?.[turn.index - 1] ?? null;
+    // the ledger doc is created asynchronously at start; never commit before it exists
+    const l = ledgerRef.current;
+    const open = l && l.id === m.id ? await l.ready : false;
+    const hash = await commitTurn({ ...m, ledgerOpen: open }, turn, prev);
+    // the match may have moved on (or been replaced) while hashing; only extend the same match
+    const cur = matchRef.current;
+    if (cur.id !== m.id) return;
+    const chain = [...(cur.chain ?? [])];
+    chain[turn.index] = hash;
+    put({ ...cur, chain });
+  }, [put]);
 
   // ── prompt construction ────────────────────────────────────────────────────
   const systemFor = useCallback(
@@ -309,9 +327,10 @@ export function useMatch() {
       };
       const next = { ...m, turns: [...m.turns, turn] };
       put(next);
+      void anchor(next, turn);
       return next;
     },
-    [isLocked, markerIn, put]
+    [anchor, isLocked, markerIn, put]
   );
 
   const endedBy = useCallback((m: MatchState, text: string) => (isLocked(m) ? null : markerIn(m, text)), [isLocked, markerIn]);
@@ -336,7 +355,9 @@ export function useMatch() {
           id: uid(), index: 0, from: side, kind: "system-note", delivered: seedText, tap: null,
           attempts: [], modelId: lo.modelId, callsign: lo.callsign, edited: false, at: Date.now(),
         };
-        put({ ...matchRef.current, turns: [seedTurn], startedAt: Date.now() });
+        const seeded = { ...matchRef.current, turns: [seedTurn], startedAt: Date.now() };
+        put(seeded);
+        void anchor(seeded, seedTurn);
         if (voiceRef.current.on) await speak(side, seedText);
         if (stopRef.current) return;
       }
@@ -413,6 +434,9 @@ export function useMatch() {
     stop();
     const m = freshMatch(config);
     put(m); setDraft(null);
+    const ready = openLedger(m);
+    ledgerRef.current = { id: m.id, ready };
+    void ready.then((ok) => { if (matchRef.current.id === m.id) put({ ...matchRef.current, ledgerOpen: ok }); });
     setVoice((v) => ({ ...v, charsA: 0, charsB: 0, usd: 0 }));
     void runLoop();
   }, [config, put, runLoop, setDraft, stop]);
@@ -506,9 +530,20 @@ export function useMatch() {
       turns: m.turns.slice(0, index + 1),
       injects: m.injects.filter((i) => i.afterTurn <= index),
       discarded: [],
+      chain: (m.chain ?? []).slice(0, index + 1),
+      ledgerOpen: false,
       label: `fork@${index}`,
     };
     put(forked); setDraft(null);
+    // a fork is a new ledger; the inherited prefix is re-anchored now (its commit times will
+    // be a burst, which the site reports honestly as "forked")
+    const readyF = openLedger(forked);
+    ledgerRef.current = { id: forked.id, ready: readyF };
+    void readyF.then(async (ok) => {
+      if (matchRef.current.id !== forked.id) return;
+      put({ ...matchRef.current, ledgerOpen: ok });
+      if (ok) for (const t of forked.turns) await commitTurn({ ...forked, ledgerOpen: true }, t, forked.chain?.[t.index - 1] ?? null);
+    });
   }, [put, setDraft, stop]);
 
   /** TWIN RUN: same match with the two loadouts swapped, to separate model from position. */
@@ -517,18 +552,49 @@ export function useMatch() {
     const m = matchRef.current;
     setBranches((b) => [...b, m]);
     const swapped: MatchConfig = { ...m.config, A: { ...m.config.B }, B: { ...m.config.A } };
-    put({ ...freshMatch(swapped), label: "twin (sides swapped)" }); setDraft(null);
+    const twin = { ...freshMatch(swapped), label: "twin (sides swapped)" };
+    put(twin); setDraft(null);
+    const readyT = openLedger(twin);
+    ledgerRef.current = { id: twin.id, ready: readyT };
+    void readyT.then((ok) => { if (matchRef.current.id === twin.id) put({ ...matchRef.current, ledgerOpen: ok }); });
     void runLoop();
   }, [put, runLoop, setDraft, stop]);
 
   const setMode = useCallback((mode: Mode) => setConfig((c) => ({ ...c, mode })), []);
+
+  /** Load a community run for reading, forking and rerunning. Nothing is generated. */
+  const importRun = useCallback((run: PublishedRun) => {
+    stop();
+    const cfg: MatchConfig = {
+      ...DEFAULT_CONFIG,
+      scenarioId: run.scenarioId,
+      mode: "gated",
+      maxTurns: Math.max(run.config.maxTurns, run.turns.length + 4),
+      budgetUsd: run.config.budgetUsd,
+      A: { ...run.config.A }, B: { ...run.config.B },
+      customSeed: run.config.customSeed,
+    };
+    setConfig(cfg);
+    const m: MatchState = {
+      id: uid(), config: cfg,
+      turns: run.turns, injects: run.injects ?? [], discarded: [],
+      status: "paused", priceLock: run.priceLock ?? {},
+      chain: run.chain ?? [], ledgerOpen: false,
+      startedAt: run.startedAt ?? undefined,
+      endedReason: run.endedReason ?? undefined,
+      label: `imported · ${run.title}`,
+      imported: { id: run.id ?? run.matchId, title: run.title, handle: run.handle ?? null },
+    };
+    ledgerRef.current = null;
+    put(m); setDraft(null);
+  }, [put, setDraft, stop]);
 
   return {
     config, setConfig, setMode,
     match, branches, setBranches,
     draft, setDraft, live,
     voice, setVoice,
-    start, stop, resume, approve, replaceWith, regenerate, kill, inject, forkAt, twinRun,
+    start, stop, resume, approve, replaceWith, regenerate, kill, inject, forkAt, twinRun, importRun,
     spend: spend(match),
     scenario: scenarioById(config.scenarioId),
     scenarios: SCENARIOS,

@@ -172,9 +172,12 @@ function Fighter({
 }
 
 export default function Setup({
-  config, setConfig, scenario, scenarios, voice, setVoice, onStart, onSettings,
+  config, setConfig, scenario, scenarios, voice, setVoice, onStart, onSettings, onImportId, onImportFile, importMsg,
 }: {
   onSettings: () => void;
+  onImportId: (idOrUrl: string) => void;
+  onImportFile: (f: File) => void;
+  importMsg: string | null;
   config: MatchConfig;
   setConfig: (f: (c: MatchConfig) => MatchConfig) => void;
   scenario: Scenario;
@@ -185,6 +188,7 @@ export default function Setup({
 }) {
   const [health, setHealth] = useState<Health | null>(null);
   const [showBriefs, setShowBriefs] = useState(false);
+  const [importText, setImportText] = useState("");
   const [editing, setEditing] = useState<Side | null>(null);
   useEffect(() => { fetch("/api/health").then((r) => r.json()).then(setHealth).catch(() => {}); }, []);
 
@@ -463,6 +467,29 @@ export default function Setup({
               <span className="text-[12px] text-dim">Wait for each utterance to finish before the next turn (real conversation pacing)</span>
             </label>
           )}
+        </section>
+
+        <section className="plate hair clip-bevel p-5 mb-8">
+          <div className="flex items-center justify-between gap-6 flex-wrap">
+            <div>
+              <div className="uiFont text-[14px] font-bold tracking-[.1em] text-ink/90 inline-flex items-center gap-2"><Icon name="fork" size={16} />REPLAY A COMMUNITY RUN</div>
+              <div className="text-[12px] text-dim mt-1 max-w-[62ch] leading-relaxed">
+                Paste a run link or id from the community page, or drop an exported JSON file. It loads here read-only; fork any message to continue it with live models.
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <input value={importText} onChange={(e) => setImportText(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && importText.trim()) onImportId(importText); }}
+                placeholder="https://modeltalk.dev/run/?id=…"
+                className="w-[300px] bg-deck hair px-3 py-2 text-[13px] outline-none placeholder:text-faint focus:border-amber/60" />
+              <button onClick={() => importText.trim() && onImportId(importText)} disabled={!importText.trim()}
+                className="clip-tab hair plate px-4 py-2 uiFont text-[12px] font-bold tracking-[.1em] text-dim hover:text-ink disabled:opacity-40">LOAD</button>
+              <label className="clip-tab hair plate px-4 py-2 uiFont text-[12px] font-bold tracking-[.1em] text-dim hover:text-ink cursor-pointer">
+                FILE<input type="file" accept="application/json" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onImportFile(f); e.target.value = ""; }} />
+              </label>
+            </div>
+          </div>
+          {importMsg && <div className="label mt-3 text-amber">{importMsg}</div>}
         </section>
 
         <button

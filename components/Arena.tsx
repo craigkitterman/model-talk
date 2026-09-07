@@ -93,7 +93,7 @@ function Bubble({ t, accent, onFork }: { t: Turn; accent: string; onFork: () => 
 }
 
 export default function Arena({
-  m, live, spend, voice, onStop, onResume, onInject, onFork, onTwin, onExport, onNew, status, dock, onSettings,
+  m, live, spend, voice, onStop, onResume, onInject, onFork, onTwin, onExport, onNew, status, dock, onSettings, onShare,
 }: {
   onSettings: () => void;
   m: MatchState;
@@ -105,6 +105,7 @@ export default function Arena({
   onInject: (side: Side, text: string) => void;
   onFork: (i: number) => void; onTwin: () => void;
   onExport: (fmt: "json" | "md") => void; onNew: () => void;
+  onShare: () => void;
   /** The interceptor, docked below the transcript so the conversation stays readable. */
   dock?: React.ReactNode;
 }) {
@@ -188,6 +189,12 @@ export default function Arena({
           </div>
           <div ref={scrollRef} className="relative z-10 flex-1 min-h-0 overflow-y-auto px-8 py-6">
             <div className="min-h-full flex flex-col justify-end gap-4">
+            {m.imported && (
+              <div className="hair bg-deck/60 px-4 py-3 text-[13px] text-dim flex items-center gap-3">
+                <Icon name="brief" size={16} className="text-amber" />
+                <span>Imported from the community: <b className="text-ink">{m.imported.title}</b>{m.imported.handle ? ` by @${m.imported.handle}` : " (anonymous)"}. Read it, or fork any message to keep going with live models.</span>
+              </div>
+            )}
             {m.turns.map((t) => (
               <Bubble key={t.id} t={t} accent={t.from === "A" ? accentA : accentB} onFork={() => onFork(t.index)} />
             ))}
@@ -210,6 +217,7 @@ export default function Arena({
                 <div className="flex justify-center gap-2">
                   <button onClick={onNew} className="clip-tab uiFont text-[12px] font-extrabold tracking-[.14em] px-7 py-3 bg-amber text-void hover:brightness-110"
                     style={{ boxShadow: "0 0 44px -14px var(--color-amber)" }}>NEW MATCH</button>
+                  <button onClick={onShare} className="clip-tab hair px-5 py-3 uiFont text-[12px] font-bold tracking-[.1em] bg-good/10 border-good/50 text-good hover:bg-good/20"><span className="inline-flex items-center gap-2"><Icon name="export" size={14} />SHARE</span></button>
                   <button onClick={onTwin} className="clip-tab hair plate px-5 py-3 uiFont text-[12px] font-bold tracking-[.1em] text-dim hover:text-ink"><span className="inline-flex items-center gap-2"><Icon name="twin" size={14} />TWIN RUN</span></button>
                   <button onClick={() => onExport("md")} className="clip-tab hair plate px-5 py-3 uiFont text-[12px] font-bold tracking-[.1em] text-dim hover:text-ink"><span className="inline-flex items-center gap-2"><Icon name="export" size={14} />EXPORT</span></button>
                 </div>
@@ -284,6 +292,11 @@ export default function Arena({
           </div>
 
           <div className="shrink-0 border-t border-edge p-4 space-y-2">
+            <button onClick={onShare} disabled={m.turns.length < 2}
+              className="w-full clip-tab hair py-3 uiFont text-[12px] font-extrabold tracking-[.14em] bg-good/10 border-good/50 text-good hover:bg-good/20 disabled:opacity-40"
+              title={m.turns.length < 2 ? "Needs at least one exchange" : "Publish this run to the community"}>
+              <span className="inline-flex items-center gap-2"><Icon name="export" size={14} />SHARE TO COMMUNITY</span>
+            </button>
             <div className="grid grid-cols-2 gap-2">
               <button onClick={() => onExport("json")} className="clip-tab hair plate py-2 uiFont text-[12px] font-bold tracking-[.14em] text-dim hover:text-ink"><span className="inline-flex items-center gap-1.5"><Icon name="export" size={13} />JSON</span></button>
               <button onClick={() => onExport("md")} className="clip-tab hair plate py-2 uiFont text-[12px] font-bold tracking-[.14em] text-dim hover:text-ink"><span className="inline-flex items-center gap-1.5"><Icon name="export" size={13} />MARKDOWN</span></button>

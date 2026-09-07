@@ -5,4 +5,6 @@ mkdirSync("site", { recursive: true });
 mkdirSync("public", { recursive: true });
 copyFileSync("design/tokens.css", "site/tokens.css");
 copyFileSync("design/tokens.css", "public/tokens.css");
-console.log("tokens synced → site/tokens.css, public/tokens.css");
+copyFileSync("shared/chain.mjs", "site/chain.mjs");
+copyFileSync("design/icons.json", "site/icons.json");
+console.log("synced: tokens.css → site/, public/; chain.mjs → site/");
