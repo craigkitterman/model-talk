@@ -195,8 +195,10 @@ owner can hide one from the Firebase console. Any run can be downloaded as JSON 
 into the app (`Replay a community run` on the setup screen, or `http://localhost:3400/?import=<id>`)
 and forked from any message.
 
-Local testing: `pnpm emu` starts the Firebase Auth + Firestore emulators; set
-`NEXT_PUBLIC_FIREBASE_EMULATOR=1` in `.env.local` to point the app at them.
+Local integration testing: start the Firebase Auth + Firestore emulators from the
+separate website repository, then set `NEXT_PUBLIC_FIREBASE_EMULATOR=1` in this
+tool's `.env.local`. Website hosting, rules, and deployment configuration are
+maintained separately; the tool retains only its community-sharing client.
 
 ## Architecture
 
@@ -218,6 +220,7 @@ lib/useMatch.ts    the orchestrator: turn loop, gating, budget, forking, audio
 lib/scenarios.ts   scenario briefs + thought tap
 lib/community      anonymous auth, Firestore REST, ledger + publish
 shared/chain.mjs   hash chain + verification, shared byte-for-byte with the site
-site/              static marketing + community pages (Firebase Hosting)
-firestore.rules    create-only runs and ledger; votes/comments need a real sign-in
 ```
+
+The marketing/community website and Firebase deployment files are maintained in a
+separate private repository. This repository contains the local research tool.

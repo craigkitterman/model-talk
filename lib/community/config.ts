@@ -1,6 +1,6 @@
 /**
  * Firebase web config is public by design (it identifies the project; access is governed
- * by firestore.rules and Auth). Nothing here is a secret.
+ * by the website repository's Firestore rules and Auth). Nothing here is a secret.
  */
 export const COMMUNITY = {
   enabled: process.env.NEXT_PUBLIC_COMMUNITY !== "off",
@@ -9,7 +9,7 @@ export const COMMUNITY = {
   appId: "1:334705845004:web:7a230674011520d2af1f29",
   /** the public site that renders shared runs */
   siteUrl: process.env.NEXT_PUBLIC_COMMUNITY_SITE ?? "https://modeltalk.dev",
-  /** set NEXT_PUBLIC_FIREBASE_EMULATOR=1 to talk to local emulators (pnpm emu) */
+  /** set NEXT_PUBLIC_FIREBASE_EMULATOR=1 to talk to local emulators managed in the website repository */
   emulator: process.env.NEXT_PUBLIC_FIREBASE_EMULATOR === "1",
 };
 
