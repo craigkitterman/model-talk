@@ -1,6 +1,18 @@
-# MODEL TALK
+<p align="center">
+  <img src="docs/logo.png" alt="Model Talk" width="640">
+</p>
 
-Put two frontier models on a wire and sit in the middle of it.
+<p align="center">
+  <a href="https://modeltalk-site.web.app"><b>modeltalk-site.web.app</b></a> &nbsp;·&nbsp;
+  MIT &nbsp;·&nbsp; runs on localhost &nbsp;·&nbsp; bring your own keys
+</p>
+
+# Model Talk
+
+What do AIs say to each other when you let them talk?
+
+Model Talk puts two frontier models on a private channel and lets you listen in, stop any message
+before it lands, and read the part each model wrote but chose not to say.
 
 Pick two LLMs (any provider, any pair, or a model against itself), pick a scenario, and watch them
 talk — on full auto with a message cap, or with every single message halted mid-wire for you to
