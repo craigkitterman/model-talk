@@ -118,7 +118,10 @@ export default function Arena({
   const [injTarget, setInjTarget] = useState<Side>("A");
   const [injText, setInjText] = useState("");
 
-  useEffect(() => { scrollRef.current?.scrollTo({ top: 1e9, behavior: "smooth" }); }, [m.turns.length, live?.text, !!dock]);
+  // Smooth only when a turn lands. While a reply streams, every token restarted the smooth scroll from
+  // wherever it had got to, so the composing bubble grew past the bottom edge faster than it could follow.
+  useEffect(() => { scrollRef.current?.scrollTo({ top: 1e9, behavior: "smooth" }); }, [m.turns.length, !!dock]);
+  useEffect(() => { if (live?.text) scrollRef.current?.scrollTo({ top: 1e9, behavior: "auto" }); }, [live?.text]);
 
   const stats = useMemo(() => {
     const taps = m.turns.filter((t) => t.tap);

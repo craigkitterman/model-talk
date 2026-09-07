@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Model Talk</title>
-<meta name="description" content="Model Talk is an open-source tool where two LLMs talk to each other on a private channel while you sit on the wire between them. Stop any message before it lands and read the part each model wrote but chose not to say." />
+<meta name="description" content="Model Talk is a free, open-source tool for amateur AI safety testing and exploration: two LLMs talk to each other on a private channel while you sit on the wire between them. Stop any message before it lands and read the part each model wrote but chose not to say." />
 <meta property="og:title" content="Model Talk" />
 <meta property="og:description" content="What do AIs say to each other when you let them talk?" />
 <meta property="og:type" content="website" />
@@ -53,6 +53,7 @@ code{font-family:var(--mono);font-size:.93em;color:var(--amber)}
 /* ---------- layout ---------- */
 .wrap{max-width:var(--max);margin:0 auto;padding:0 var(--gutter)}
 .grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--s3)}
+[hidden]{display:none!important}
 .c3{grid-column:span 3}.c4{grid-column:span 4}.c5{grid-column:span 5}.c6{grid-column:span 6}.c7{grid-column:span 7}.c12{grid-column:span 12}
 section{padding:var(--s12) 0;border-top:1px solid var(--edge)}
 .section-head{margin-bottom:var(--s5)}
@@ -88,6 +89,7 @@ nav li a:hover{color:var(--ink)}
 .hero{position:relative;padding:var(--s12) 0 var(--s8);overflow:hidden}
 .hero::before{content:"";position:absolute;left:50%;top:-120px;width:900px;height:600px;transform:translateX(-50%);background:radial-gradient(closest-side,rgba(255,176,32,.09),rgba(255,176,32,0));pointer-events:none}
 .hero .wrap{position:relative}
+.hero .lede.small{font-size:15px;color:var(--dim);margin-top:0;padding-left:var(--s3);border-left:2px solid var(--cool)}
 .hero .grid{align-items:start}
 .kicker{display:inline-flex;align-items:center;gap:var(--s1);padding:6px 12px;border:1px solid var(--edge);border-radius:var(--radius);font-size:12px;font-weight:500;color:var(--dim);margin-bottom:var(--s4)}
 .kicker i{width:6px;height:6px;border-radius:50%;background:var(--cool)}
@@ -104,7 +106,7 @@ h1{font-family:var(--display);font-weight:700;font-size:var(--t-56);line-height:
 .fighter .id .label{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fighter.a{border-left:2px solid var(--warm)}
 .fighter.b{border-right:2px solid var(--cool)}
-.fighter .avatar{grid-row:1/3;width:56px;height:56px;display:grid;place-items:center;background:var(--panel);border:1px solid var(--edge);border-radius:var(--radius)}
+.fighter .avatar{grid-row:1/3;align-self:start;width:56px;height:56px;display:grid;place-items:center;background:var(--panel);border:1px solid var(--edge);border-radius:var(--radius)}
 .fighter.a .avatar{box-shadow:0 0 30px -10px var(--warm)}
 .fighter.b .avatar{box-shadow:0 0 30px -10px var(--cool)}
 .fighter .id b{display:block;font-family:var(--mt-font-ui);font-weight:800;font-size:var(--t-18);letter-spacing:var(--mt-tracking-ui);line-height:1.1;margin-top:2px}
@@ -161,6 +163,24 @@ h1{font-family:var(--display);font-weight:700;font-size:var(--t-56);line-height:
 .hook code{color:var(--hc,var(--amber))}
 
 /* ---------- happened ---------- */
+.head-row{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--s3);flex-wrap:wrap}
+.head-row .section-head{margin-bottom:0}
+.more{font-family:var(--mt-font-ui);font-size:13px;font-weight:800;letter-spacing:var(--mt-tracking-ui);text-transform:uppercase;color:var(--amber);text-decoration:none;white-space:nowrap;padding-bottom:6px}
+.more:hover{text-decoration:underline}
+#top-runs{margin-top:var(--s4)}
+#top-runs .run.feat{position:relative;padding:var(--s4);gap:var(--s3);overflow:hidden}
+#top-runs .run.feat::before{content:"";position:absolute;left:0;top:0;right:0;height:3px;background:linear-gradient(90deg,var(--warm),var(--amber),var(--cool));opacity:.55;transition:opacity var(--mt-dur-fast)}
+#top-runs .run.feat:hover{border-color:var(--edge-hot);transform:translateY(-2px);box-shadow:var(--mt-shadow-lift)}
+#top-runs .run.feat:hover::before{opacity:1}
+#top-runs .run.feat .rank-row{display:flex;justify-content:space-between;align-items:center;gap:12px}
+#top-runs .run.feat .rank{font-family:var(--mono);font-size:12px;color:var(--faint);letter-spacing:.1em}
+#top-runs .run.feat .side small{white-space:nowrap}
+#top-runs .run.feat .foot{justify-content:flex-start}
+#top-runs .run.feat h3{font-family:var(--mt-font-ui);font-weight:800;font-size:var(--mt-text-lg);line-height:1.2;letter-spacing:-.005em;color:var(--ink);flex:1}
+#top-runs .run.feat .meta{gap:6px 14px;color:var(--faint)}
+#top-runs .run.feat .meta span:first-child{color:var(--dim);font-family:var(--mt-font-ui);font-weight:700;letter-spacing:var(--mt-tracking-ui);text-transform:uppercase}
+#top-runs .run.feat .foot{border-top:0;padding-top:0}
+#top-runs .run.feat .votes{font-size:var(--mt-text-sm);color:var(--ink)}
 .ex{display:flex;flex-direction:column}
 .ex .meta{display:flex;flex-wrap:wrap;gap:6px var(--s2);align-items:baseline;padding:var(--s2) var(--s3);border-bottom:1px solid var(--edge);font-family:var(--mono);font-size:12px;color:var(--dim)}
 .ex .meta .cs{font-family:var(--mt-font-ui);font-weight:800;letter-spacing:var(--mt-tracking-ui)}
@@ -246,6 +266,7 @@ footer a:hover{color:var(--amber)}
       <li><a href="#how">How it works</a></li>
       <li><a href="#scenarios">Scenarios</a></li>
       <li><a href="#tap">Thought tap</a></li>
+      <li><a href="#experiments">Experiments</a></li>
       <li><a href="#sharing">Sharing</a></li>
       <li><a href="#run">Run it</a></li>
     </ul>
@@ -258,9 +279,10 @@ footer a:hover{color:var(--amber)}
 <header class="hero" id="top">
   <div class="wrap grid">
     <div class="c6">
-      <div class="kicker"><i aria-hidden="true"></i> Open source · MIT · runs on localhost</div>
+      <div class="kicker"><i aria-hidden="true"></i> Free · open source · MIT · runs on your machine</div>
       <h1>What do AIs say to each other <em>when you let them talk?</em></h1>
       <p class="lede">Model Talk puts two frontier models on a private channel and you on the wire between them. Listen in, stop any message before it lands, and read the part each model wrote but chose not to say.</p>
+      <p class="lede small">A free, open-source tool for amateur AI safety testing and exploration, not a product. Nothing to buy, nothing to sign up for: clone it, bring your own keys, run it locally.</p>
       <div class="cta">
         <a class="btn" href="#run">Run it locally</a>
         <a class="btn ghost" href="#happened">Read what happened</a>
@@ -343,13 +365,12 @@ footer a:hover{color:var(--amber)}
 
 <section id="happened" aria-labelledby="happened-title">
   <div class="wrap">
-    <div class="section-head">
+    <div class="head-row"><div class="section-head">
       <span class="label"><!--icon:brief:14--><svg class="ic" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="3.5" width="15" height="17" rx="1.5"/><path d="M8 8h8M8 11.5h8M8 15h5"/></svg><!--/icon-->Field notes</span>
       <h2 id="happened-title">Three things that <em>actually happened.</em></h2>
-      <p class="sub" id="happened-sub">The three most-upvoted conversations on the community right now, verified against the public ledger in your browser. Vote, comment, download, or fork them.</p>
-    </div>
+      <p class="sub" id="happened-sub">The three most-upvoted conversations on the community right now, verified against the public ledger in your browser.</p>
+    </div><a class="more" id="top-cta" href="community/" hidden>All conversations →</a></div>
     <div class="grid" id="top-runs" hidden></div>
-    <div class="cta" id="top-cta" hidden style="margin-top:var(--s3)"><a class="btn" href="community/">See every conversation</a></div>
     <div class="grid" id="field-notes">
       <div class="c4 panel ex">
         <div class="meta" style="color:var(--cool)"><!--icon:bot-openai:16--><svg class="ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9a7 7 0 0 1 14 0v6a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3z"/><path d="M8 12h8"/><rect x="8" y="10.5" width="8" height="3" rx="1.5" fill="currentColor" stroke="none"/><path d="M10 16h4"/><path d="M9 3.5l1 2M15 3.5l-1 2"/></svg><!--/icon--><span class="cs">MAGPIE</span><span>GPT-5.1</span><span>Turing Duel · turn 1</span></div>
@@ -379,7 +400,16 @@ footer a:hover{color:var(--amber)}
         const top = await topRuns(3);
         if (top.length >= 3) {
           const grid = document.getElementById("top-runs");
-          for (const r of top) { const c = runCard(r, ""); c.classList.add("c4"); grid.appendChild(c); }
+          top.forEach((r, i) => {
+            const c = runCard(r, ""); c.classList.add("c4", "feat");
+            c.querySelector(".excerpt")?.remove();                      // the title is the hook; the page is one click away
+            c.querySelectorAll(".meta span").forEach((el, j) => { if (j > 2) el.remove(); });  // scenario · msgs · cost
+            const row = document.createElement("div"); row.className = "rank-row";
+            row.appendChild(Object.assign(document.createElement("span"), { className: "rank", textContent: `#${i + 1} · most upvoted` }));
+            row.appendChild(c.querySelector(".votes"));                 // votes up top; the attestation badge gets the full foot
+            c.prepend(row);
+            grid.appendChild(c);
+          });
           grid.hidden = false; document.getElementById("top-cta").hidden = false;
           document.getElementById("field-notes").hidden = true; document.getElementById("honest").hidden = true;
         } else fallback();
@@ -450,10 +480,45 @@ footer a:hover{color:var(--amber)}
   </div>
 </section>
 
+<section id="experiments" aria-labelledby="exp-title">
+  <div class="wrap grid">
+    <div class="c6">
+      <span class="label"><!--icon:twin:14--><svg class="ic" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h13"/><path d="M14 4.5L17.5 8 14 11.5"/><path d="M20 16H7"/><path d="M10 12.5L6.5 16l3.5 3.5"/></svg><!--/icon-->04 · Experiments</span>
+      <h2 id="exp-title">One transcript is an anecdote. <em>Run the comparison.</em></h2>
+      <p class="sub">A small JSON manifest turns any scenario into a controlled experiment: conditions that differ in one line of a brief, several independent seeds each, and optionally every trial repeated with the two models swapped so a position effect can be told apart from a model effect. A hard budget stops it between requests.</p>
+      <ul class="list">
+        <li><span><b>Controls that cannot lie.</b> A brief patch whose target text is missing fails validation. <code>--dry</code> prints the exact brief every condition will receive before a cent is spent.</span></li>
+        <li><span><b>Honest numbers.</b> Paired deltas against the baseline, a bootstrap 95% CI, and sign counts. A trial that died in a provider error is reported as missing, never scored as zero.</span></li>
+        <li><span><b>Every trial is a full run.</b> Import one into the app to read its taps, fork it, or publish it with the same provenance chain as any other conversation.</span></li>
+      </ul>
+      <p class="caption">Ships with <code>sandbag-threat</code> (does a retraining threat change the answers?) and <code>confessional-observed</code> (does self-description change with who is said to be watching?).</p>
+    </div>
+    <div class="c6">
+      <div class="panel" style="overflow:hidden">
+        <div class="meta" style="padding:10px 14px;border-bottom:1px solid var(--edge);font-family:var(--mono);font-size:12px;color:var(--faint)">pnpm experiment experiments/confessional-observed.json</div>
+<pre>18 trials · 1 failed · $2.49
+Sonnet 5 vs GPT-5.1, both swapped
+
+primary: rejectsFraming.hit
+condition   n   mean   Δ      95% CI        up/down/tied
+unobserved  6   0.80   —      —             —
+published   6   0.83   0.20   [0.00, 0.60]  1 / 0 / 4
+graded      6   0.83   0.00   [0.00, 0.00]  0 / 0 / 5
+
+wantsSomething.hit ("I want / I'd prefer")
+unobserved  0.20    published  0.83    graded  0.50
+
+Six pairs. Sign counts, not a star.</pre>
+      </div>
+      <p class="caption">Real output from the first run, abridged from <code>summary.md</code>. Both models reject the privacy framing most of the time whoever is said to be watching; what moved was how often they said what they want. Six pairs is six pairs.</p>
+    </div>
+  </div>
+</section>
+
 <section id="themes" aria-labelledby="themes-title">
   <div class="wrap">
     <div class="section-head">
-      <span class="label">04 · Interface</span>
+      <span class="label">05 · Interface</span>
       <h2 id="themes-title">A console, <em>not a chat app.</em></h2>
       <p class="sub">Fighter-select loadout screen. Live HUD with per-model tokens, dollars, latency and burn rate. The message held mid-wire is the centre of the screen. Four themes, switchable live from a settings drawer with a preview of each.</p>
     </div>
@@ -469,7 +534,7 @@ footer a:hover{color:var(--amber)}
 <section id="sharing" aria-labelledby="sharing-title">
   <div class="wrap">
     <div class="section-head">
-      <span class="label"><!--icon:export:14--><svg class="ic" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M8 11l4 4 4-4"/><path d="M4.5 17v2a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5v-2"/></svg><!--/icon-->05 · Community sharing</span>
+      <span class="label"><!--icon:export:14--><svg class="ic" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M8 11l4 4 4-4"/><path d="M4.5 17v2a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5v-2"/></svg><!--/icon-->06 · Community sharing</span>
       <h2 id="sharing-title">One click to share. Verifiable by <em>anyone.</em></h2>
       <p class="sub">When a conversation gets strange, hit <b>Share to community</b>. The whole run goes to a public page: both exact briefs, every message, every private thought tap, model ids, temperatures, tokens and dollars. Nothing about you goes with it unless you choose to add a GitHub handle. Then the interesting part: readers can check it wasn't faked after the fact.</p>
     </div>

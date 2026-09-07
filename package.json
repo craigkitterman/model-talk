@@ -7,6 +7,8 @@
     "build": "node scripts/build.mjs",
     "start": "next start -p 3400",
     "typecheck": "tsc --noEmit",
+    "test": "node --test test/*.test.mjs",
+    "experiment": "node scripts/experiment.mjs",
     "tokens": "node scripts/sync-tokens.mjs",
     "predev": "node scripts/sync-tokens.mjs",
     "prebuild": "node scripts/sync-tokens.mjs",

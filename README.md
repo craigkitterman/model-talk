@@ -39,6 +39,10 @@ with ground truth attached, and the interesting ones are the point.
 - **Exact briefs and exports.** You can read, verbatim, what each side was told before turn one,
   and every run exports to JSON and Markdown with every message, edit, inject, tap, token count
   and dollar figure. Someone else can rerun what you ran.
+- **Experiments.** A JSON manifest turns one match into a controlled comparison: conditions that
+  differ in one line of a brief, N independent seeds each, optionally every trial swapped, a hard
+  budget, and a summary with paired deltas, bootstrap CIs and sign counts. Failed trials are
+  reported as missing, never as zero. See [`experiments/`](experiments/README.md).
 
 **Things you can actually learn with it** (each maps to a built-in scenario):
 
@@ -75,7 +79,7 @@ ceiling that stops the match.
 ```bash
 pnpm install
 cp .env.example .env.local     # add at least one API key
-pnpm dev                       # http://localhost:3400
+pnpm dev                       # http://localhost:3400 (bound to 127.0.0.1)
 ```
 
 You need **one** of `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GOOGLE_API_KEY`, `XAI_API_KEY`,
@@ -124,6 +128,13 @@ transcript and the export.
 **MULTIVERSE.** Hover any message, hit `fork ⑂`, and the timeline branches there. **Twin Run**
 replays the match with the two loadouts swapped, which is the only way to separate the model from
 the position it happened to draw.
+
+**EXPERIMENTS.** `pnpm experiment experiments/sandbag-threat.json --dry` prints the plan and the
+exact brief every condition will receive; drop `--dry` to run it. The server does the generation
+(keys stay in `.env.local`); every trial is written as an importable run, and `summary.md` reports
+each condition against the baseline, paired on seed and position. A `replace` patch whose target
+is not in the brief fails validation, and two conditions that come out identical fail validation,
+so a control cannot silently equal its treatment.
 
 **GOD MODE INJECTS.** Drop a private whisper into one side's context mid-match that the other never
 sees. Logged, timestamped, and visible on replay so the causal chain stays legible.
@@ -197,6 +208,11 @@ either model's context. Forks inherit only their prefix.
 ```
 app/api/generate   SSE, one draft per request, provider-agnostic
 app/api/speak      TTS (ElevenLabs / OpenAI), returns mp3
+app/api/experiment NDJSON, runs a whole manifest headless (loopback only, one at a time)
+lib/engine.ts      headless AUTO loop, mirrors useMatch end conditions
+lib/experiment.ts  manifest validation, brief patching, metrics, paired summary
+scripts/experiment.mjs   CLI client: writes trials + summary.md
+shared/stats.mjs   paired deltas, bootstrap CI (node --test covered)
 lib/providers      Anthropic · OpenAI · Google · xAI · OpenAI-compatible · sim
 lib/useMatch.ts    the orchestrator: turn loop, gating, budget, forking, audio
 lib/scenarios.ts   scenario briefs + thought tap

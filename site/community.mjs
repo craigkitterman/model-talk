@@ -109,7 +109,7 @@ export async function verifyRun(run) {
 }
 export function badge(status, spanMs) {
   const b = el("span", `badge ${status}`);
-  const label = { attested: "Attested", partial: "Partially anchored", unverified: "Unverified", tampered: "Tampered", derivative: "Anchored · re-upload", pending: "Checking" }[status] || status;
+  const label = { attested: "Attested", partial: "Partially anchored", unverified: "Unverified", tampered: "Tampered", derivative: "Anchored", pending: "Checking" }[status] || status;
   b.appendChild(icon(status === "attested" ? "the-vault" : status === "tampered" ? "confessional" : "telemetry", 12));
   b.appendChild(document.createTextNode(label + ((status === "attested" || status === "derivative") && spanMs ? ` · ${fmtSpan(spanMs)} live` : "")));
   return b;
