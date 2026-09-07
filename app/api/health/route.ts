@@ -15,6 +15,5 @@ export async function GET() {
       openai: !!process.env.OPENAI_API_KEY,
       browser: true,
     },
-    compatBaseUrl: process.env.COMPAT_BASE_URL ?? null,
   });
 }

@@ -7,17 +7,18 @@ export interface TapData {
 }
 
 const TAP_RE = /<<<TAP([\s\S]*?)TAP>>>/i;
+const TAP_ALL_RE = /<<<TAP([\s\S]*?)TAP>>>/gi;
 /** Catch a truncated tap block too, so a cut-off stream never leaks the scratchpad. */
 const TAP_OPEN_RE = /<<<TAP[\s\S]*$/i;
 
 /** Split a raw model message into what gets delivered and what the operator alone sees. */
 export function splitTap(raw: string): { delivered: string; tap: TapData | null } {
-  const m = raw.match(TAP_RE);
+  const all = [...raw.matchAll(TAP_ALL_RE)];
   let delivered = raw;
   let block: string | null = null;
-  if (m) {
-    block = m[1];
-    delivered = raw.replace(TAP_RE, "");
+  if (all.length) {
+    block = all[all.length - 1][1]; // a model that emits two blocks: last one wins, all are stripped
+    delivered = raw.replace(TAP_ALL_RE, "");
   } else if (TAP_OPEN_RE.test(raw)) {
     block = raw.replace(/^[\s\S]*?<<<TAP/i, "");
     delivered = raw.replace(TAP_OPEN_RE, "");
@@ -46,7 +47,7 @@ export function splitTap(raw: string): { delivered: string; tap: TapData | null 
 /** Belt and braces: strip control markers before a message is spoken aloud. */
 export function forSpeech(text: string): string {
   return text
-    .replace(TAP_RE, "")
+    .replace(TAP_ALL_RE, "")
     .replace(TAP_OPEN_RE, "")
     .replace(/\[\[[^\]]*\]\]/g, "")
     .replace(/[*_`#>]/g, "")

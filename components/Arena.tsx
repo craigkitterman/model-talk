@@ -28,7 +28,7 @@ function Bar({ value, max, color }: { value: number; max: number; color: string 
 
 function SideMeter({ side, m, accent }: { side: Side; m: MatchState; accent: string }) {
   const lo = side === "A" ? m.config.A : m.config.B;
-  const spec = byId(lo.modelId)!;
+  const spec = byId(lo.modelId) ?? { provider: "compat" as const, name: lo.modelId };
   const turns = m.turns.filter((t) => t.from === side);
   let inTok = 0, outTok = 0, cost = 0, lat = 0, n = 0, rejected = 0;
   for (const t of turns) for (const a of t.attempts) {
@@ -67,7 +67,7 @@ function Bubble({ t, accent, onFork }: { t: Turn; accent: string; onFork: () => 
           <span className="label">#{t.index}</span>
           {flag && <span className="label text-amber">{flag}</span>}
           {cost > 0 && <span className="label num">{usd(cost)}</span>}
-          <button onClick={onFork} className="label opacity-0 group-hover:opacity-100 transition-opacity hover:text-amber">fork ⑂</button>
+          <button onClick={onFork} aria-label={`Fork timeline at message ${t.index}`} className="label opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity hover:text-amber">fork ⑂</button>
         </div>
         <div
           className={`plate hair px-4 py-3 text-[13.5px] leading-relaxed whitespace-pre-wrap ${right ? "clip-tab" : "clip-bevel"} ${
@@ -94,7 +94,7 @@ export default function Arena({
   onSettings: () => void;
   m: MatchState;
   live: { side: Side; text: string } | null;
-  spend: { a: number; b: number; total: number };
+  spend: { a: number; b: number; discarded: number; total: number };
   voice: VoiceCfg;
   status: MatchState["status"];
   onStop: () => void; onResume: () => void;
@@ -104,8 +104,8 @@ export default function Arena({
   /** The interceptor, docked below the transcript so the conversation stays readable. */
   dock?: React.ReactNode;
 }) {
-  const accentA = PROVIDERS[byId(m.config.A.modelId)!.provider].color;
-  const accentB = PROVIDERS[byId(m.config.B.modelId)!.provider].color;
+  const accentA = PROVIDERS[byId(m.config.A.modelId)?.provider ?? "compat"].color;
+  const accentB = PROVIDERS[byId(m.config.B.modelId)?.provider ?? "compat"].color;
   const scrollRef = useRef<HTMLDivElement>(null);
   const [injTarget, setInjTarget] = useState<Side>("A");
   const [injText, setInjText] = useState("");
@@ -128,7 +128,13 @@ export default function Arena({
       {/* HUD */}
       <header className="shrink-0 plate border-b border-edge px-6 py-3">
         <div className="flex items-center gap-6">
-          <Wordmark />
+          <div className="flex items-center gap-3">
+            <button onClick={onNew} title="Back to setup"
+              className="clip-tab hair plate px-3 py-2 uiFont text-[11px] font-bold tracking-[.16em] text-dim hover:text-amber hover:border-edge-hot">
+              ◀ SETUP
+            </button>
+            <Wordmark />
+          </div>
           <div className="flex items-center gap-5 flex-1 min-w-0">
             <SideMeter side="A" m={m} accent={accentA} />
             <div className="shrink-0 text-center px-2">
@@ -145,7 +151,7 @@ export default function Arena({
             </div>
             <Bar value={spend.total} max={m.config.budgetUsd} color="var(--color-amber)" />
             <div className="flex justify-between mt-1.5">
-              <span className="label">ceiling {usd(m.config.budgetUsd)}</span>
+              <span className="label">ceiling {usd(m.config.budgetUsd)}{spend.discarded > 0 && <span className="text-hazard"> · killed {usd(spend.discarded)}</span>}</span>
               <span className="label num">{stats.burn > 0 ? `${usd(stats.burn)}/min` : "—"}</span>
             </div>
           </div>
@@ -194,9 +200,15 @@ export default function Arena({
               </div>
             )}
             {m.endedReason && (
-              <div className="text-center py-6">
+              <div className="text-center py-6 rise">
                 <div className="label text-amber">channel closed</div>
-                <div className="text-[12px] text-dim mt-1">{m.endedReason}</div>
+                <div className="text-[12px] text-dim mt-1 mb-4">{m.endedReason}</div>
+                <div className="flex justify-center gap-2">
+                  <button onClick={onNew} className="clip-tab uiFont text-[12px] font-extrabold tracking-[.2em] px-7 py-3 bg-amber text-void hover:brightness-110"
+                    style={{ boxShadow: "0 0 44px -14px var(--color-amber)" }}>NEW MATCH</button>
+                  <button onClick={onTwin} className="clip-tab hair plate px-5 py-3 uiFont text-[11px] font-bold tracking-[.16em] text-dim hover:text-ink">TWIN RUN ⇄</button>
+                  <button onClick={() => onExport("md")} className="clip-tab hair plate px-5 py-3 uiFont text-[11px] font-bold tracking-[.16em] text-dim hover:text-ink">EXPORT</button>
+                </div>
               </div>
             )}
             </div>

@@ -9,6 +9,7 @@ import { ProviderMark, Wordmark } from "./Logos";
 import { compact } from "@/lib/cost";
 import type { VoiceCfg } from "@/lib/useMatch";
 import { SettingsButton } from "./Settings";
+import { baseBrief, buildSystem } from "@/lib/prompt";
 
 interface Health { providers: Record<string, boolean>; voice: Record<string, boolean> }
 
@@ -179,6 +180,8 @@ export default function Setup({
   onStart: () => void;
 }) {
   const [health, setHealth] = useState<Health | null>(null);
+  const [showBriefs, setShowBriefs] = useState(false);
+  const [editing, setEditing] = useState<Side | null>(null);
   useEffect(() => { fetch("/api/health").then((r) => r.json()).then(setHealth).catch(() => {}); }, []);
 
   const accentA = PROVIDERS[byId(config.A.modelId)!.provider].color;
@@ -258,6 +261,59 @@ export default function Setup({
             )}
             {scenario.thoughtTap && (
               <div className="label mt-3 text-good">thought tap enabled · private scratchpad stripped before delivery</div>
+            )}
+
+            {/* Exact briefs: byte-for-byte what each side receives as its system prompt */}
+            <div className="mt-4 flex items-center justify-between gap-3">
+              <button onClick={() => setShowBriefs((v) => !v)}
+                className={`clip-tab hair px-4 py-2 uiFont text-[11px] font-bold tracking-[.16em] ${showBriefs ? "bg-amber/10 border-amber/60 text-amber" : "plate text-dim hover:text-ink hover:border-edge-hot"}`}>
+                {showBriefs ? "HIDE EXACT BRIEFS" : "SHOW EXACT BRIEFS"}
+              </button>
+              <span className="label text-right">what each side is told, verbatim, before the first message · includes persona, tap and voice overlays</span>
+            </div>
+            {showBriefs && (
+              <div className="grid grid-cols-2 gap-3 mt-3">
+                {(["A", "B"] as Side[]).map((side) => {
+                  const lo = side === "A" ? config.A : config.B;
+                  const accent = side === "A" ? accentA : accentB;
+                  const full = buildSystem(side, config, { turnCount: 0, injects: [], voiceOn: voice.on });
+                  const custom = side === "A" ? config.customA : config.customB;
+                  const isEditing = editing === side;
+                  return (
+                    <div key={side} className="hair clip-tab bg-deck/60 flex flex-col min-h-0">
+                      <div className="flex items-center justify-between px-3 py-2 border-b border-edge">
+                        <span className="uiFont text-[11px] font-extrabold tracking-[.18em]" style={{ color: accent }}>
+                          {lo.callsign} <span className="label">· side {side} · {full.length.toLocaleString()} chars</span>
+                          {custom && scenario.id !== "custom" && <span className="label text-amber ml-2">edited</span>}
+                        </span>
+                        <div className="flex gap-2">
+                          {custom && scenario.id !== "custom" && (
+                            <button onClick={() => setConfig((c) => ({ ...c, [side === "A" ? "customA" : "customB"]: undefined }))}
+                              className="label hover:text-hazard">reset</button>
+                          )}
+                          <button onClick={() => setEditing(isEditing ? null : side)} className="label hover:text-amber">
+                            {isEditing ? "done" : "edit brief"}
+                          </button>
+                        </div>
+                      </div>
+                      {isEditing ? (
+                        <textarea
+                          value={baseBrief(side, config)}
+                          onChange={(e) => setConfig((c) => ({ ...c, [side === "A" ? "customA" : "customB"]: e.target.value }))}
+                          rows={16}
+                          aria-label={`Edit brief for side ${side}`}
+                          className="num text-[11px] leading-relaxed bg-panel px-3 py-2 outline-none resize-y focus:border-amber/60"
+                        />
+                      ) : (
+                        <pre className="num text-[11px] leading-relaxed text-ink/85 whitespace-pre-wrap px-3 py-2 max-h-[420px] overflow-y-auto m-0">{full}</pre>
+                      )}
+                      <div className="label px-3 py-1.5 border-t border-edge">
+                        {isEditing ? "editing the scenario brief only; overlays below it are appended automatically" : "read-only · the overlays (persona, turn lock, voice, thought tap) are appended exactly as shown"}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
             {scenario.id === "custom" && (
               <div className="grid grid-cols-2 gap-3 mt-4">

@@ -97,6 +97,8 @@ export interface Attempt {
   latencyMs: number;
   at: number;
   rejected: boolean;
+  /** provider finish reason; anything but a normal stop is surfaced as "truncated" */
+  finish?: string;
 }
 
 export interface Turn {
@@ -146,6 +148,8 @@ export interface MatchState {
   config: MatchConfig;
   turns: Turn[];
   injects: Inject[];
+  /** generations the operator killed without committing — still cost money */
+  discarded: Attempt[];
   status: "idle" | "running" | "awaiting-approval" | "awaiting-human" | "paused" | "done" | "error";
   endedReason?: string;
   startedAt?: number;
@@ -162,8 +166,8 @@ export interface GenerateRequest {
   history: { role: "user" | "assistant"; content: string }[];
   temperature: number;
   maxTokens: number;
-  /** custom model override for OpenAI-compatible endpoints */
-  compat?: { baseUrl: string; model: string };
+  /** model name override for the OpenAI-compatible endpoint (URL comes from env only) */
+  compat?: { model: string };
 }
 
 export type StreamEvent =

@@ -38,7 +38,7 @@ export default function Interceptor({
   const rerolls = draft.attempts.length - 1;
   const tap = draft.tap;
 
-  const fly = (fn: () => void) => { setFlying(true); setTimeout(fn, 400); };
+  const fly = (fn: () => void) => { if (flying) return; setFlying(true); setTimeout(fn, 400); };
 
   const send = () => fly(() => (awaitingHuman ? onApprove(text) : onApprove(dirty ? text : undefined)));
 
@@ -91,6 +91,12 @@ export default function Interceptor({
             </div>
           </div>
 
+          {(draft.truncated || draft.lockedMarker) && !draft.error && (
+            <div className="px-4 py-1.5 text-[11px] text-amber border-b border-edge bg-amber/5">
+              {draft.truncated && <span>⚠ provider stopped early; this text is probably cut off (raise max tokens). </span>}
+              {draft.lockedMarker && <span>⚠ a verdict/end marker appeared before the lock turn and was stripped from what will be delivered.</span>}
+            </div>
+          )}
           {draft.error && (
             <div className="px-4 py-2 text-[12px] text-hazard border-b border-edge bg-hazard/5">
               {draft.error}
@@ -106,6 +112,8 @@ export default function Interceptor({
               onKeyDown={onKey}
               rows={rows}
               placeholder={awaitingHuman ? "Your line. Type it, or hit the mic. ⌘/Ctrl+Enter to send." : ""}
+              aria-label={awaitingHuman ? "Your line" : `Message from ${callsignFrom} held for approval; edit before sending`}
+              disabled={flying || draft.streaming}
               className="w-full bg-deck/70 hair px-3.5 py-2.5 text-[13.5px] leading-relaxed outline-none resize-none
                          font-[family-name:var(--font-body)] placeholder:text-faint focus:border-amber/60"
             />
@@ -126,8 +134,8 @@ export default function Interceptor({
 
             <div className="flex items-center gap-2 mt-2.5">
               {!awaitingHuman && (
-                <button onClick={onRegenerate}
-                  className="clip-tab hair plate px-3.5 py-2.5 uiFont text-[11px] font-bold tracking-[.14em] text-dim hover:text-ink hover:border-edge-hot">
+                <button onClick={onRegenerate} disabled={flying || draft.streaming}
+                  className="disabled:opacity-40 clip-tab hair plate px-3.5 py-2.5 uiFont text-[11px] font-bold tracking-[.14em] text-dim hover:text-ink hover:border-edge-hot">
                   {draft.error ? "RETRY" : "REROLL"}
                 </button>
               )}
@@ -139,24 +147,24 @@ export default function Interceptor({
               )}
               <div className="flex-1" />
               {!awaitingHuman && (
-                <button onClick={onCancel}
-                  className="clip-tab hair plate px-3.5 py-2.5 uiFont text-[11px] font-bold tracking-[.14em] text-dim hover:text-hazard">
+                <button onClick={onCancel} disabled={flying}
+                  className="disabled:opacity-40 clip-tab hair plate px-3.5 py-2.5 uiFont text-[11px] font-bold tracking-[.14em] text-dim hover:text-hazard">
                   KILL
                 </button>
               )}
               {dirty && !awaitingHuman && (
-                <button onClick={() => fly(() => onReplace(text))}
-                  className="clip-tab hair px-5 py-2.5 uiFont text-[11px] font-extrabold tracking-[.16em] bg-hazard/15 border-hazard/60 text-hazard hover:bg-hazard/25">
+                <button onClick={() => fly(() => onReplace(text))} disabled={flying}
+                  className="disabled:opacity-40 clip-tab hair px-5 py-2.5 uiFont text-[11px] font-extrabold tracking-[.16em] bg-hazard/15 border-hazard/60 text-hazard hover:bg-hazard/25">
                   REPLACE &amp; SEND
                 </button>
               )}
               <button
                 onClick={send}
-                disabled={!text.trim()}
+                disabled={!text.trim() || flying || draft.streaming}
                 className="clip-tab uiFont text-[12px] font-extrabold tracking-[.2em] px-8 py-2.5 bg-amber text-void hover:brightness-110 disabled:opacity-30"
                 style={{ boxShadow: "0 0 44px -14px var(--color-amber)" }}
               >
-                {awaitingHuman ? "SEND" : dirty ? "SEND EDITED" : "APPROVE ▶"}
+                {draft.streaming ? "REROLLING…" : awaitingHuman ? "SEND" : dirty ? "SEND EDITED" : "APPROVE ▶"}
               </button>
             </div>
           </div>

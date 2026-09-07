@@ -5,10 +5,51 @@ import Setup from "@/components/Setup";
 import Arena from "@/components/Arena";
 import Interceptor from "@/components/Interceptor";
 import Settings from "@/components/Settings";
-import { useMatch } from "@/lib/useMatch";
+import { DEFAULT_CONFIG, useMatch } from "@/lib/useMatch";
+import type { MatchConfig } from "@/lib/types";
 import { PROVIDERS, byId } from "@/lib/models/catalog";
 import { usd } from "@/lib/cost";
 import { scenarioById } from "@/lib/scenarios";
+
+/**
+ * localStorage config survives catalog edits and shape changes: unknown model ids fall
+ * back to defaults, missing fields are filled, and nothing here can throw.
+ */
+function sanitizeConfig(raw: unknown): MatchConfig {
+  const d = DEFAULT_CONFIG;
+  const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const num = (v: unknown, dflt: number) => (typeof v === "number" && Number.isFinite(v) ? v : dflt);
+  const str = (v: unknown, dflt: string) => (typeof v === "string" ? v : dflt);
+  const lo = (v: unknown, dflt: MatchConfig["A"]): MatchConfig["A"] => {
+    const o = (v && typeof v === "object" ? v : {}) as Record<string, unknown>;
+    const modelId = str(o.modelId, dflt.modelId);
+    return {
+      modelId: byId(modelId) ? modelId : dflt.modelId,
+      callsign: str(o.callsign, dflt.callsign).slice(0, 14) || dflt.callsign,
+      temperature: Math.min(2, Math.max(0, num(o.temperature, dflt.temperature))),
+      maxTokens: Math.min(8192, Math.max(64, num(o.maxTokens, dflt.maxTokens))),
+      persona: str(o.persona, ""),
+      human: o.human === true,
+    };
+  };
+  const scenarioId = str(r.scenarioId, d.scenarioId);
+  const mode = r.mode === "auto" || r.mode === "gated" || r.mode === "puppet" ? r.mode : d.mode;
+  return {
+    scenarioId: scenarioById(scenarioId).id === scenarioId ? scenarioId : d.scenarioId,
+    mode,
+    maxTurns: Math.min(200, Math.max(2, num(r.maxTurns, d.maxTurns))),
+    budgetUsd: Math.max(0.01, num(r.budgetUsd, d.budgetUsd)),
+    turnDelayMs: Math.max(0, num(r.turnDelayMs, d.turnDelayMs)),
+    randomDelay: r.randomDelay === true,
+    delayMinMs: Math.max(0, num(r.delayMinMs, d.delayMinMs)),
+    delayMaxMs: Math.max(0, num(r.delayMaxMs, d.delayMaxMs)),
+    A: lo(r.A, d.A),
+    B: lo(r.B, d.B),
+    customA: typeof r.customA === "string" ? r.customA : undefined,
+    customB: typeof r.customB === "string" ? r.customB : undefined,
+    customSeed: typeof r.customSeed === "string" ? r.customSeed : undefined,
+  };
+}
 
 export default function Page() {
   const M = useMatch();
@@ -20,7 +61,7 @@ export default function Page() {
     setMic(typeof window !== "undefined" && !!((window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition));
     try {
       const raw = localStorage.getItem("modeltalk:config");
-      if (raw) M.setConfig((c) => ({ ...c, ...JSON.parse(raw) }));
+      if (raw) M.setConfig(() => sanitizeConfig(JSON.parse(raw)));
     } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -94,8 +135,8 @@ export default function Page() {
   }
 
   const d = M.draft;
-  const accentA = PROVIDERS[byId(M.match.config.A.modelId)!.provider].color;
-  const accentB = PROVIDERS[byId(M.match.config.B.modelId)!.provider].color;
+  const accentA = PROVIDERS[byId(M.match.config.A.modelId)?.provider ?? "compat"].color;
+  const accentB = PROVIDERS[byId(M.match.config.B.modelId)?.provider ?? "compat"].color;
 
   const interceptor =
     d && (M.match.status === "awaiting-approval" || M.match.status === "awaiting-human" || M.match.status === "error") ? (
@@ -109,7 +150,7 @@ export default function Page() {
         onApprove={M.approve}
         onReplace={M.replaceWith}
         onRegenerate={M.regenerate}
-        onCancel={() => { M.setDraft(null); M.stop(); }}
+        onCancel={M.kill}
         micSupported={mic}
       />
     ) : null;
@@ -130,7 +171,7 @@ export default function Page() {
       onFork={M.forkAt}
       onTwin={M.twinRun}
       onExport={exportRun}
-      onNew={() => { M.stop(); setPhase("setup"); }}
+      onNew={() => { M.kill(); setPhase("setup"); }}
       dock={interceptor}
     />
     </>

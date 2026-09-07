@@ -33,10 +33,22 @@ async function* sseLines(res: Response, signal: AbortSignal): AsyncGenerator<str
   }
 }
 
+/** Upstream error bodies are useful ("invalid api key", "model not found") but must never
+ *  carry a token-shaped string back to the browser. */
+export function redact(s: string): string {
+  return s
+    .replace(/(sk-ant-|sk-|xai-|gsk_|AIza|Bearer\s+)[A-Za-z0-9_\-\.]{8,}/g, "$1[redacted]")
+    .replace(/[A-Za-z0-9_\-]{40,}/g, "[redacted]");
+}
+
 async function failOn(res: Response, label: string) {
   if (res.ok) return;
   const body = await res.text().catch(() => "");
-  throw new Error(`${label} ${res.status}: ${body.slice(0, 600) || res.statusText}`);
+  throw new Error(`${label} ${res.status}: ${redact(body.slice(0, 600)) || res.statusText}`);
+}
+
+class IncompleteStream extends Error {
+  constructor(label: string) { super(`${label}: stream ended before the provider signalled completion (partial draft)`); }
 }
 
 // ── Anthropic ────────────────────────────────────────────────────────────────
@@ -64,14 +76,20 @@ async function* anthropicStream(req: GenerateRequest, signal: AbortSignal): Asyn
 
   const usage = emptyUsage();
   let finish = "stop";
+  let terminal = false;
   for await (const data of sseLines(res, signal)) {
     if (!data || data === "[DONE]") continue;
     let ev: any;
     try { ev = JSON.parse(data); } catch { continue; }
+    if (ev.type === "message_stop") { terminal = true; break; }
     if (ev.type === "message_start") {
       const u = ev.message?.usage ?? {};
-      usage.inputTokens = u.input_tokens ?? 0;
-      usage.cachedInputTokens = (u.cache_read_input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0);
+      // Anthropic's input_tokens EXCLUDES cache reads/writes; normalise to "all input tokens"
+      // with cachedInputTokens = reads (the discounted subset), matching the OpenAI convention.
+      const cacheRead = u.cache_read_input_tokens ?? 0;
+      const cacheWrite = u.cache_creation_input_tokens ?? 0;
+      usage.inputTokens = (u.input_tokens ?? 0) + cacheRead + cacheWrite;
+      usage.cachedInputTokens = cacheRead;
       usage.confidence = "reported";
     } else if (ev.type === "content_block_delta") {
       if (ev.delta?.type === "text_delta") yield { type: "delta", text: ev.delta.text };
@@ -80,9 +98,10 @@ async function* anthropicStream(req: GenerateRequest, signal: AbortSignal): Asyn
       usage.outputTokens = ev.usage?.output_tokens ?? usage.outputTokens;
       finish = ev.delta?.stop_reason ?? finish;
     } else if (ev.type === "error") {
-      throw new Error(`Anthropic stream error: ${ev.error?.message ?? "unknown"}`);
+      throw new Error(`Anthropic stream error: ${redact(ev.error?.message ?? "unknown")}`);
     }
   }
+  if (!terminal && !signal.aborted) throw new IncompleteStream("Anthropic");
   yield { type: "usage", usage };
   yield { type: "done", finish };
 }
@@ -124,16 +143,18 @@ async function* openAiCompatStream(
   await failOn(res, opts.label);
 
   const usage = emptyUsage();
-  let finish = "stop";
+  let finish = "";
+  let terminal = false;
   for await (const data of sseLines(res, signal)) {
-    if (!data || data === "[DONE]") continue;
+    if (!data) continue;
+    if (data === "[DONE]") { terminal = true; break; }
     let ev: any;
     try { ev = JSON.parse(data); } catch { continue; }
-    if (ev.error) throw new Error(`${opts.label} stream error: ${ev.error.message ?? "unknown"}`);
+    if (ev.error) throw new Error(`${opts.label} stream error: ${redact(ev.error.message ?? "unknown")}`);
     const choice = ev.choices?.[0];
     if (choice?.delta?.content) yield { type: "delta", text: choice.delta.content };
     if (choice?.delta?.reasoning_content) yield { type: "reasoning", text: choice.delta.reasoning_content };
-    if (choice?.finish_reason) finish = choice.finish_reason;
+    if (choice?.finish_reason) { finish = choice.finish_reason; terminal = true; }
     if (ev.usage) {
       usage.inputTokens = ev.usage.prompt_tokens ?? 0;
       usage.outputTokens = ev.usage.completion_tokens ?? 0;
@@ -142,6 +163,8 @@ async function* openAiCompatStream(
       usage.confidence = "reported";
     }
   }
+  if (!terminal && !signal.aborted) throw new IncompleteStream(opts.label);
+  if (!finish) finish = "stop";
   // Fold reasoning into billable output where the provider reports it separately.
   // The `>` guard also catches a compat endpoint that lies about which convention it follows.
   if (!opts.reasoningInsideOutput || usage.reasoningTokens > usage.outputTokens) {
@@ -175,11 +198,12 @@ async function* googleStream(req: GenerateRequest, signal: AbortSignal): AsyncGe
 
   const usage = emptyUsage();
   let finish = "stop";
+  let terminal = false;
   for await (const data of sseLines(res, signal)) {
     if (!data) continue;
     let ev: any;
     try { ev = JSON.parse(data); } catch { continue; }
-    if (ev.error) throw new Error(`Google stream error: ${ev.error.message ?? "unknown"}`);
+    if (ev.error) throw new Error(`Google stream error: ${redact(ev.error.message ?? "unknown")}`);
     const parts = ev.candidates?.[0]?.content?.parts ?? [];
     for (const p of parts) {
       if (typeof p.text === "string" && p.text) {
@@ -187,7 +211,8 @@ async function* googleStream(req: GenerateRequest, signal: AbortSignal): AsyncGe
         else yield { type: "delta", text: p.text };
       }
     }
-    if (ev.candidates?.[0]?.finishReason) finish = ev.candidates[0].finishReason;
+    if (ev.candidates?.[0]?.finishReason) { finish = ev.candidates[0].finishReason; terminal = true; }
+    if (ev.promptFeedback?.blockReason) throw new Error(`Google blocked the prompt: ${ev.promptFeedback.blockReason}`);
     if (ev.usageMetadata) {
       usage.inputTokens = ev.usageMetadata.promptTokenCount ?? 0;
       usage.outputTokens = ev.usageMetadata.candidatesTokenCount ?? 0;
@@ -196,6 +221,7 @@ async function* googleStream(req: GenerateRequest, signal: AbortSignal): AsyncGe
       usage.confidence = "reported";
     }
   }
+  if (!terminal && !signal.aborted) throw new IncompleteStream("Google");
   // Gemini bills thought tokens as output; fold them in so the meter matches the invoice.
   usage.outputTokens += usage.reasoningTokens;
   yield { type: "usage", usage };
@@ -248,7 +274,10 @@ TAP>>>`;
 
 export function streamCompletion(req: GenerateRequest, signal: AbortSignal): AsyncGenerator<StreamEvent> {
   const spec = byId(req.modelId);
-  const provider = req.compat ? "compat" : spec?.provider ?? "compat";
+  // Only catalog ids resolve. A client cannot choose a provider or an upstream URL;
+  // the compat base URL comes from the environment alone.
+  if (!spec) throw new Error(`unknown model id: ${req.modelId}`);
+  const provider = spec.provider;
 
   switch (provider) {
     case "sim":
@@ -273,7 +302,7 @@ export function streamCompletion(req: GenerateRequest, signal: AbortSignal): Asy
     }
     default: {
       const key = process.env.COMPAT_API_KEY;
-      const baseUrl = req.compat?.baseUrl || process.env.COMPAT_BASE_URL;
+      const baseUrl = process.env.COMPAT_BASE_URL;
       if (!baseUrl) throw new Error("COMPAT_BASE_URL is not set in .env.local");
       return openAiCompatStream(
         req, { baseUrl, key: key ?? "none", label: "Compat", reasoningInsideOutput: true }, signal

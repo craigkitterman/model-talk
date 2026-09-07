@@ -69,9 +69,20 @@ export default function Settings({ open, onClose }: { open: boolean; onClose: ()
 
   useEffect(() => {
     if (!open) return;
-    const k = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const prev = document.activeElement as HTMLElement | null;
+    document.querySelector<HTMLElement>('[role="dialog"] button')?.focus();
+    const k = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      if (e.key === "Tab") {
+        const items = [...document.querySelectorAll<HTMLElement>('[role="dialog"] button')];
+        if (!items.length) return;
+        const i = items.indexOf(document.activeElement as HTMLElement);
+        if (e.shiftKey && i <= 0) { e.preventDefault(); items[items.length - 1].focus(); }
+        else if (!e.shiftKey && i === items.length - 1) { e.preventDefault(); items[0].focus(); }
+      }
+    };
     window.addEventListener("keydown", k);
-    return () => window.removeEventListener("keydown", k);
+    return () => { window.removeEventListener("keydown", k); prev?.focus?.(); };
   }, [open, onClose]);
 
   if (!open) return null;

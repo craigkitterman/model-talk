@@ -1,10 +1,14 @@
 import { NextRequest } from "next/server";
+import { rejectCrossSite } from "@/lib/guard";
+import { redact } from "@/lib/providers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /** Synthesise one utterance. Returns audio/mpeg bytes, or 4xx with a readable reason. */
 export async function POST(req: NextRequest) {
+  const refused = rejectCrossSite(req);
+  if (refused) return refused;
   const { voiceId, text, speed = 1 } = (await req.json().catch(() => ({}))) as {
     voiceId?: string; text?: string; speed?: number;
   };
@@ -25,7 +29,7 @@ export async function POST(req: NextRequest) {
           speed,
         }),
       });
-      if (!res.ok) return new Response(`OpenAI TTS ${res.status}: ${await res.text()}`, { status: 502 });
+      if (!res.ok) return new Response(`OpenAI TTS ${res.status}: ${redact((await res.text()).slice(0, 400))}`, { status: 502 });
       return new Response(await res.arrayBuffer(), { headers: { "content-type": "audio/mpeg" } });
     }
 
@@ -45,9 +49,9 @@ export async function POST(req: NextRequest) {
         }),
       }
     );
-    if (!res.ok) return new Response(`ElevenLabs ${res.status}: ${await res.text()}`, { status: 502 });
+    if (!res.ok) return new Response(`ElevenLabs ${res.status}: ${redact((await res.text()).slice(0, 400))}`, { status: 502 });
     return new Response(await res.arrayBuffer(), { headers: { "content-type": "audio/mpeg" } });
   } catch (e) {
-    return new Response(e instanceof Error ? e.message : String(e), { status: 500 });
+    return new Response(redact(e instanceof Error ? e.message : String(e)), { status: 500 });
   }
 }

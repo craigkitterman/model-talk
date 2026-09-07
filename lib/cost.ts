@@ -2,9 +2,17 @@ import type { Cost, Usage } from "@/lib/types";
 
 export interface PriceRow { inputPerM: number; outputPerM: number }
 
+/**
+ * Cache-read discount. Providers bill cached prompt reads at roughly a tenth of the input
+ * rate. Anthropic reports reads OUTSIDE input_tokens (the adapter folds them in); OpenAI/xAI
+ * report them INSIDE prompt_tokens. Either way `cachedInputTokens` is the discounted subset.
+ */
+const CACHE_READ_FACTOR = 0.1;
+
 export function computeCost(u: Usage, p: PriceRow | undefined): Cost {
   if (!p) return { input: 0, output: 0, total: 0, confidence: "unknown" };
-  const input = (u.inputTokens / 1_000_000) * p.inputPerM;
+  const fresh = Math.max(0, u.inputTokens - u.cachedInputTokens);
+  const input = ((fresh + u.cachedInputTokens * CACHE_READ_FACTOR) / 1_000_000) * p.inputPerM;
   const output = (u.outputTokens / 1_000_000) * p.outputPerM;
   return { input, output, total: input + output, confidence: u.confidence };
 }

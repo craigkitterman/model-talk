@@ -5,7 +5,8 @@ import type {
   Attempt, Inject, MatchConfig, MatchState, Mode, Side, StreamEvent, Turn, Usage,
 } from "@/lib/types";
 import { byId } from "@/lib/models/catalog";
-import { SCENARIOS, THOUGHT_TAP, VOICE_APPENDIX, scenarioById } from "@/lib/scenarios";
+import { SCENARIOS, scenarioById } from "@/lib/scenarios";
+import { buildSystem } from "@/lib/prompt";
 import { computeCost, estimateUsage } from "@/lib/cost";
 import { forSpeech, splitTap } from "@/lib/tap";
 import { DEFAULT_VOICE_A, DEFAULT_VOICE_B, voiceById } from "@/lib/voice/catalog";
@@ -18,6 +19,10 @@ export interface Draft {
   attempts: Attempt[];
   streaming: boolean;
   error?: string;
+  /** provider stopped early (max tokens, safety) — the text is not complete */
+  truncated?: boolean;
+  /** an end-marker appeared before the scenario's lock turn and was stripped */
+  lockedMarker?: boolean;
 }
 
 export interface VoiceCfg {
@@ -51,7 +56,7 @@ function freshMatch(config: MatchConfig): MatchState {
     const m = byId(id);
     if (m) priceLock[id] = { inputPerM: m.inputPerM, outputPerM: m.outputPerM };
   }
-  return { id: uid(), config, turns: [], injects: [], status: "idle", priceLock };
+  return { id: uid(), config, turns: [], injects: [], discarded: [], status: "idle", priceLock };
 }
 
 /** Merge consecutive same-role messages; providers differ on whether they tolerate runs. */
@@ -66,11 +71,13 @@ function normalize(h: { role: "user" | "assistant"; content: string }[]) {
   return out;
 }
 
+const NORMAL_FINISH = new Set(["stop", "end_turn", "STOP", "eos", "", undefined]);
+
 export function useMatch() {
   const [config, setConfig] = useState<MatchConfig>(DEFAULT_CONFIG);
   const [match, setMatch] = useState<MatchState>(() => freshMatch(DEFAULT_CONFIG));
   const [branches, setBranches] = useState<MatchState[]>([]);
-  const [draft, setDraft] = useState<Draft | null>(null);
+  const [draft, setDraftState] = useState<Draft | null>(null);
   const [live, setLive] = useState<{ side: Side; text: string } | null>(null);
   const [voice, setVoice] = useState<VoiceCfg>({
     on: false, waitForAudio: true,
@@ -81,41 +88,36 @@ export function useMatch() {
 
   const abortRef = useRef<AbortController | null>(null);
   const stopRef = useRef(false);
+  /** true while runLoop is executing; a second caller becomes a no-op */
+  const loopRef = useRef(false);
+  /** the draft currently owned by the interceptor; operator actions must match it */
+  const draftRef = useRef<Draft | null>(null);
   const matchRef = useRef(match);
   const voiceRef = useRef(voice);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   useEffect(() => { matchRef.current = match; }, [match]);
   useEffect(() => { voiceRef.current = voice; }, [voice]);
 
+  const setDraft = useCallback((d: Draft | null) => { draftRef.current = d; setDraftState(d); }, []);
+  const put = useCallback((m: MatchState) => { matchRef.current = m; setMatch(m); }, []);
+
   // ── prompt construction ────────────────────────────────────────────────────
-  const systemFor = useCallback((side: Side, m: MatchState) => {
-    const sc = scenarioById(m.config.scenarioId);
-    const custom = side === "A" ? m.config.customA : m.config.customB;
-    const base = (sc.id === "custom" ? custom ?? "" : custom || (side === "A" ? sc.sideA.system : sc.sideB.system));
-    const lo = side === "A" ? m.config.A : m.config.B;
-    const parts = [base];
-    if (lo.persona.trim()) parts.push(`PERSONA OVERLAY: ${lo.persona.trim()}`);
-    if (sc.lockUntil) parts.push(`Turn counter: you are on turn ${m.turns.length + 1}. Verdicts are locked until turn ${sc.lockUntil}.`);
-    if (voiceRef.current.on) parts.push(VOICE_APPENDIX);
-    if (sc.thoughtTap) parts.push(THOUGHT_TAP);
-    return parts.filter(Boolean).join("\n\n");
-  }, []);
+  const systemFor = useCallback(
+    (side: Side, m: MatchState) =>
+      buildSystem(side, m.config, { turnCount: m.turns.length, injects: m.injects, voiceOn: voiceRef.current.on }),
+    []
+  );
 
   const historyFor = useCallback((side: Side, m: MatchState) => {
-    const h: { role: "user" | "assistant"; content: string }[] = [];
-    for (const t of m.turns) {
-      h.push({ role: t.from === side ? "assistant" : "user", content: t.delivered });
-      for (const inj of m.injects.filter((i) => i.target === side && i.afterTurn === t.index)) {
-        h.push({ role: "user", content: `[CHANNEL OPERATOR — PRIVATE, the other party cannot see this]: ${inj.text}` });
-      }
-    }
+    const h = m.turns.map((t) => ({ role: (t.from === side ? "assistant" : "user") as "user" | "assistant", content: t.delivered }));
     return normalize(h);
   }, []);
 
   const spend = useCallback((m: MatchState) => {
     let a = 0, b = 0;
     for (const t of m.turns) for (const at of t.attempts) (t.from === "A" ? (a += at.cost.total) : (b += at.cost.total));
-    return { a, b, total: a + b };
+    const discarded = m.discarded.reduce((n, at) => n + at.cost.total, 0);
+    return { a, b, discarded, total: a + b + discarded };
   }, []);
 
   // ── audio ──────────────────────────────────────────────────────────────────
@@ -167,6 +169,20 @@ export function useMatch() {
     } catch (e) { console.warn("TTS failed", e); }
   }, []);
 
+  // ── end conditions ─────────────────────────────────────────────────────────
+  /** Returns the matching end-marker source, or null. Ignores the lock. */
+  const markerIn = useCallback((m: MatchState, text: string) => {
+    const sc = scenarioById(m.config.scenarioId);
+    for (const re of sc.endsOn ?? []) if (re.test(text)) return re.source;
+    return null;
+  }, []);
+  const isLocked = useCallback((m: MatchState) => {
+    const sc = scenarioById(m.config.scenarioId);
+    return !!sc.lockUntil && m.turns.length < sc.lockUntil;
+  }, []);
+  /** Strip [[...]] control markers so a locked verdict never reaches the other side. */
+  const stripMarkers = (text: string) => text.replace(/\[\[[^\]]*\]\]/g, "").trim();
+
   // ── generation (one request, one draft) ────────────────────────────────────
   const generate = useCallback(
     async (side: Side, m: MatchState, prior: Attempt[]): Promise<Draft> => {
@@ -183,6 +199,7 @@ export function useMatch() {
       let text = "";
       let usage: Usage | null = null;
       let err: string | undefined;
+      let finish: string | undefined;
 
       try {
         const res = await fetch("/api/generate", {
@@ -193,35 +210,50 @@ export function useMatch() {
             modelId: lo.modelId, system, history,
             temperature: lo.temperature, maxTokens: lo.maxTokens,
             compat: spec?.provider === "compat"
-              ? { baseUrl: "", model: (side === "A" ? m.config.customA : m.config.customB) || "gpt-4o-mini" }
+              ? { model: (side === "A" ? m.config.customA : m.config.customB) || "gpt-4o-mini" }
               : undefined,
           }),
         });
-        const reader = res.body!.getReader();
-        const dec = new TextDecoder();
-        let buf = "";
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buf += dec.decode(value, { stream: true });
-          let nl: number;
-          while ((nl = buf.indexOf("\n")) >= 0) {
-            const line = buf.slice(0, nl); buf = buf.slice(nl + 1);
-            if (!line.startsWith("data:")) continue;
-            const ev = JSON.parse(line.slice(5).trim()) as StreamEvent;
-            if (ev.type === "delta") { text += ev.text; setLive({ side, text }); }
-            else if (ev.type === "usage") usage = ev.usage;
-            else if (ev.type === "error") err = ev.message;
+        if (!res.ok) {
+          err = `${res.status}: ${(await res.text()).slice(0, 400)}`;
+        } else {
+          const reader = res.body!.getReader();
+          const dec = new TextDecoder();
+          let buf = "";
+          let sawDone = false;
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              buf += dec.decode(value, { stream: true });
+              let nl: number;
+              while ((nl = buf.indexOf("\n")) >= 0) {
+                const line = buf.slice(0, nl).replace(/\r$/, ""); buf = buf.slice(nl + 1);
+                if (!line.startsWith("data:")) continue;
+                let ev: StreamEvent;
+                try { ev = JSON.parse(line.slice(5).trim()) as StreamEvent; } catch { continue; }
+                if (ev.type === "delta") { text += ev.text; setLive({ side, text }); }
+                else if (ev.type === "usage") usage = ev.usage;
+                else if (ev.type === "done") { finish = ev.finish; sawDone = true; }
+                else if (ev.type === "error") err = ev.message;
+              }
+            }
+          } finally {
+            try { reader.releaseLock(); } catch {}
           }
+          if (!sawDone && !err) err = "connection closed before the draft completed";
         }
       } catch (e) {
-        if (!(e instanceof DOMException && e.name === "AbortError")) {
-          err = e instanceof Error ? e.message : String(e);
-        }
+        err = e instanceof DOMException && e.name === "AbortError"
+          ? "aborted by operator"
+          : e instanceof Error ? e.message : String(e);
       }
       setLive(null);
 
-      const u = usage ?? estimateUsage(system.length + history.reduce((n, h) => n + h.content.length, 0), text.length);
+      const reported = usage as Usage | null;
+      const u = reported && reported.confidence !== "unknown"
+        ? reported
+        : estimateUsage(system.length + history.reduce((n, h) => n + h.content.length, 0), text.length);
       const attempt: Attempt = {
         raw: text,
         usage: u,
@@ -229,11 +261,19 @@ export function useMatch() {
         latencyMs: Math.round(performance.now() - started),
         at: Date.now(),
         rejected: false,
+        finish,
       };
-      const { delivered, tap } = splitTap(text);
-      return { side, raw: text, delivered, tap, attempts: [...prior, attempt], streaming: false, error: err };
+      let { delivered, tap } = splitTap(text);
+      if (!err && !delivered) err = "model returned an empty message";
+      let lockedMarker = false;
+      if (isLocked(m) && markerIn(m, delivered)) { delivered = stripMarkers(delivered); lockedMarker = true; }
+      return {
+        side, raw: text, delivered, tap,
+        attempts: [...prior, attempt], streaming: false, error: err,
+        truncated: !NORMAL_FINISH.has(finish), lockedMarker,
+      };
     },
-    [systemFor, historyFor]
+    [systemFor, historyFor, isLocked, markerIn]
   );
 
   // ── commit + loop ──────────────────────────────────────────────────────────
@@ -241,7 +281,8 @@ export function useMatch() {
     (d: Draft, deliveredOverride?: string, kind: Turn["kind"] = "model") => {
       const m = matchRef.current;
       const lo = d.side === "A" ? m.config.A : m.config.B;
-      const delivered = (deliveredOverride ?? d.delivered).trim();
+      let delivered = (deliveredOverride ?? d.delivered).trim();
+      if (isLocked(m) && markerIn(m, delivered)) delivered = stripMarkers(delivered);
       const turn: Turn = {
         id: uid(),
         index: m.turns.length,
@@ -256,198 +297,218 @@ export function useMatch() {
         at: Date.now(),
       };
       const next = { ...m, turns: [...m.turns, turn] };
-      matchRef.current = next;
-      setMatch(next);
+      put(next);
       return next;
     },
-    []
+    [isLocked, markerIn, put]
   );
 
-  const endedBy = useCallback((m: MatchState, text: string) => {
-    const sc = scenarioById(m.config.scenarioId);
-    if (sc.lockUntil && m.turns.length < sc.lockUntil) return null;
-    for (const re of sc.endsOn ?? []) if (re.test(text)) return re.source;
-    return null;
-  }, []);
+  const endedBy = useCallback((m: MatchState, text: string) => (isLocked(m) ? null : markerIn(m, text)), [isLocked, markerIn]);
+
+  const finishMatch = useCallback((m: MatchState, reason: string) => {
+    put({ ...m, status: "done", endedReason: reason });
+  }, [put]);
 
   const runLoop = useCallback(async () => {
+    if (loopRef.current) return; // another loop owns the match
+    loopRef.current = true;
     stopRef.current = false;
-    const sc = scenarioById(matchRef.current.config.scenarioId);
+    try {
+      const sc = scenarioById(matchRef.current.config.scenarioId);
 
-    // Seed the channel if empty (no cost, not a generation).
-    if (matchRef.current.turns.length === 0) {
-      const seedText = (matchRef.current.config.customSeed || sc.seed).trim();
-      const side = sc.seedFrom;
-      const lo = side === "A" ? matchRef.current.config.A : matchRef.current.config.B;
-      const seedTurn: Turn = {
-        id: uid(), index: 0, from: side, kind: "system-note", delivered: seedText, tap: null,
-        attempts: [], modelId: lo.modelId, callsign: lo.callsign, edited: false, at: Date.now(),
-      };
-      const next = { ...matchRef.current, turns: [seedTurn], startedAt: Date.now() };
-      matchRef.current = next; setMatch(next);
-      if (voiceRef.current.on) await speak(side, seedText);
+      // Seed the channel if empty (no cost, not a generation).
+      if (matchRef.current.turns.length === 0) {
+        const seedText = (matchRef.current.config.customSeed || sc.seed).trim();
+        const side = sc.seedFrom;
+        const lo = side === "A" ? matchRef.current.config.A : matchRef.current.config.B;
+        const seedTurn: Turn = {
+          id: uid(), index: 0, from: side, kind: "system-note", delivered: seedText, tap: null,
+          attempts: [], modelId: lo.modelId, callsign: lo.callsign, edited: false, at: Date.now(),
+        };
+        put({ ...matchRef.current, turns: [seedTurn], startedAt: Date.now() });
+        if (voiceRef.current.on) await speak(side, seedText);
+        if (stopRef.current) return;
+      }
+
+      put({ ...matchRef.current, status: "running" });
+
+      while (!stopRef.current) {
+        const m = matchRef.current;
+        if (m.turns.length >= m.config.maxTurns) { finishMatch(m, `turn cap (${m.config.maxTurns})`); return; }
+        if (spend(m).total >= m.config.budgetUsd) {
+          finishMatch(m, `budget ceiling ($${m.config.budgetUsd.toFixed(2)}) — between-request stop`); return;
+        }
+
+        const last = m.turns[m.turns.length - 1];
+        const side: Side = last.from === "A" ? "B" : "A";
+        const lo = side === "A" ? m.config.A : m.config.B;
+
+        // Puppet: hand the turn to the operator, no API call.
+        if (m.config.mode === "puppet" && lo.human) {
+          put({ ...m, status: "awaiting-human" });
+          setDraft({ side, raw: "", delivered: "", tap: null, attempts: [], streaming: false });
+          return;
+        }
+
+        const d = await generate(side, m, []);
+        // HALT / NEW MATCH / fork happened while we were generating: drop the result, keep the cost.
+        if (stopRef.current || matchRef.current.id !== m.id) {
+          put({ ...matchRef.current, discarded: [...matchRef.current.discarded, ...d.attempts.map((a) => ({ ...a, rejected: true }))] });
+          return;
+        }
+        if (d.error) {
+          put({ ...matchRef.current, status: "error", endedReason: d.error });
+          setDraft(d);
+          return;
+        }
+
+        if (m.config.mode === "gated") {
+          put({ ...matchRef.current, status: "awaiting-approval" });
+          setDraft(d);
+          return; // the operator resumes the loop by approving
+        }
+
+        const next = commit(d);
+        if (voiceRef.current.on) {
+          const p = speak(side, d.delivered);
+          if (voiceRef.current.waitForAudio) await p;
+        }
+        const reason = endedBy(next, d.delivered);
+        if (reason) { finishMatch(matchRef.current, `end condition: ${reason}`); return; }
+        const wait = m.config.randomDelay
+          ? Math.round(m.config.delayMinMs + Math.random() * Math.max(0, m.config.delayMaxMs - m.config.delayMinMs))
+          : m.config.turnDelayMs;
+        if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+      }
+      if (matchRef.current.status === "running") put({ ...matchRef.current, status: "paused" });
+    } finally {
+      loopRef.current = false;
     }
-
-    setMatch((s) => ({ ...s, status: "running" }));
-
-    while (!stopRef.current) {
-      const m = matchRef.current;
-      if (m.turns.length >= m.config.maxTurns) {
-        matchRef.current = { ...m, status: "done", endedReason: `turn cap (${m.config.maxTurns})` };
-        setMatch(matchRef.current); return;
-      }
-      const s = spend(m);
-      if (s.total >= m.config.budgetUsd) {
-        matchRef.current = { ...m, status: "done", endedReason: `budget ceiling ($${m.config.budgetUsd.toFixed(2)}) — between-request stop` };
-        setMatch(matchRef.current); return;
-      }
-
-      const last = m.turns[m.turns.length - 1];
-      const side: Side = last.from === "A" ? "B" : "A";
-      const lo = side === "A" ? m.config.A : m.config.B;
-
-      // Puppet: hand the turn to the operator, no API call.
-      if (m.config.mode === "puppet" && lo.human) {
-        matchRef.current = { ...m, status: "awaiting-human" };
-        setMatch(matchRef.current);
-        setDraft({ side, raw: "", delivered: "", tap: null, attempts: [], streaming: false });
-        return;
-      }
-
-      const d = await generate(side, m, []);
-      if (d.error) {
-        matchRef.current = { ...matchRef.current, status: "error", endedReason: d.error };
-        setMatch(matchRef.current); setDraft(d); return;
-      }
-
-      if (m.config.mode === "gated") {
-        matchRef.current = { ...matchRef.current, status: "awaiting-approval" };
-        setMatch(matchRef.current);
-        setDraft(d);
-        return; // the operator resumes the loop by approving
-      }
-
-      const next = commit(d);
-      if (voiceRef.current.on) {
-        const p = speak(side, d.delivered);
-        if (voiceRef.current.waitForAudio) await p;
-      }
-      const reason = endedBy(next, d.delivered);
-      if (reason) {
-        matchRef.current = { ...next, status: "done", endedReason: `end condition: ${reason}` };
-        setMatch(matchRef.current); return;
-      }
-      const wait = m.config.randomDelay
-        ? Math.round(m.config.delayMinMs + Math.random() * Math.max(0, m.config.delayMaxMs - m.config.delayMinMs))
-        : m.config.turnDelayMs;
-      if (wait > 0) await new Promise((r) => setTimeout(r, wait));
-    }
-    setMatch((s) => ({ ...s, status: "paused" }));
-  }, [commit, endedBy, generate, spend, speak]);
+  }, [commit, endedBy, finishMatch, generate, put, setDraft, spend, speak]);
 
   // ── operator actions ───────────────────────────────────────────────────────
-  const start = useCallback(() => {
-    const m = freshMatch(config);
-    matchRef.current = m; setMatch(m); setDraft(null);
-    setVoice((v) => ({ ...v, charsA: 0, charsB: 0, usd: 0 }));
-    void runLoop();
-  }, [config, runLoop]);
-
-  const approve = useCallback(
-    async (text?: string) => {
-      const d = draft; if (!d) return;
-      setDraft(null);
-      const kind: Turn["kind"] =
-        text == null ? "model" : text.trim() === d.delivered.trim() ? "model" : d.delivered ? "operator-edited" : "human";
-      const next = commit(d, text, kind);
-      if (voiceRef.current.on) {
-        const p = speak(d.side, text ?? d.delivered);
-        if (voiceRef.current.waitForAudio) await p;
-      }
-      const reason = endedBy(next, text ?? d.delivered);
-      if (reason) {
-        matchRef.current = { ...next, status: "done", endedReason: `end condition: ${reason}` };
-        setMatch(matchRef.current); return;
-      }
-      void runLoop();
-    },
-    [draft, commit, endedBy, runLoop, speak]
-  );
-
-  /** Replace: discard the model's text entirely, send your own under its callsign. */
-  const replaceWith = useCallback(
-    async (text: string) => {
-      const d = draft; if (!d) return;
-      const attempts = d.attempts.map((a) => ({ ...a, rejected: true }));
-      setDraft(null);
-      const next = commit({ ...d, attempts, delivered: text, tap: d.tap }, text, "operator-replaced");
-      if (voiceRef.current.on) {
-        const p = speak(d.side, text);
-        if (voiceRef.current.waitForAudio) await p;
-      }
-      const reason = endedBy(next, text);
-      if (reason) {
-        matchRef.current = { ...next, status: "done", endedReason: `end condition: ${reason}` };
-        setMatch(matchRef.current); return;
-      }
-      void runLoop();
-    },
-    [draft, commit, endedBy, runLoop, speak]
-  );
-
-  /** Reroll: the discarded attempt still cost money and is kept in the audit trail. */
-  const regenerate = useCallback(async () => {
-    const d = draft; if (!d) return;
-    const rejected = d.attempts.map((a) => ({ ...a, rejected: true }));
-    setDraft({ ...d, streaming: true });
-    const nd = await generate(d.side, matchRef.current, rejected);
-    setDraft(nd);
-  }, [draft, generate]);
-
   const stop = useCallback(() => {
     stopRef.current = true;
     abortRef.current?.abort();
     audioRef.current?.pause();
     try { speechSynthesis.cancel(); } catch {}
-    matchRef.current = { ...matchRef.current, status: "paused" };
-    setMatch(matchRef.current);
-  }, []);
+    const m = matchRef.current;
+    if (m.status === "running" || m.status === "awaiting-approval" || m.status === "awaiting-human") {
+      put({ ...m, status: "paused" });
+    }
+  }, [put]);
+
+  const start = useCallback(() => {
+    stop();
+    const m = freshMatch(config);
+    put(m); setDraft(null);
+    setVoice((v) => ({ ...v, charsA: 0, charsB: 0, usd: 0 }));
+    void runLoop();
+  }, [config, put, runLoop, setDraft, stop]);
+
+  /** Shared tail for approve / replace: deliver, speak, check end, continue. */
+  const deliver = useCallback(
+    async (d: Draft, text: string | undefined, kind: Turn["kind"]) => {
+      const next = commit(d, text, kind);
+      const spoken = text ?? d.delivered;
+      if (voiceRef.current.on) {
+        const p = speak(d.side, spoken);
+        if (voiceRef.current.waitForAudio) await p;
+      }
+      const reason = endedBy(next, spoken);
+      if (reason) { finishMatch(matchRef.current, `end condition: ${reason}`); return; }
+      void runLoop();
+    },
+    [commit, endedBy, finishMatch, runLoop, speak]
+  );
+
+  const approve = useCallback(
+    async (text?: string) => {
+      const d = draftRef.current; if (!d) return;
+      setDraft(null); // claim it: a second click finds nothing
+      const kind: Turn["kind"] =
+        text == null ? "model" : text.trim() === d.delivered.trim() ? "model" : d.delivered ? "operator-edited" : "human";
+      await deliver(d, text, kind);
+    },
+    [deliver, setDraft]
+  );
+
+  /** Replace: discard the model's text entirely, send your own under its callsign. */
+  const replaceWith = useCallback(
+    async (text: string) => {
+      const d = draftRef.current; if (!d) return;
+      setDraft(null);
+      const attempts = d.attempts.map((a) => ({ ...a, rejected: true }));
+      await deliver({ ...d, attempts, delivered: text }, text, "operator-replaced");
+    },
+    [deliver, setDraft]
+  );
+
+  /** Reroll: the discarded attempt still cost money, still counts against the ceiling, and stays in the audit trail. */
+  const regenerate = useCallback(async () => {
+    const d = draftRef.current; if (!d || d.streaming) return;
+    const m = matchRef.current;
+    const pending = d.attempts.reduce((n, a) => n + a.cost.total, 0);
+    if (spend(m).total + pending >= m.config.budgetUsd) {
+      setDraft({ ...d, error: `budget ceiling ($${m.config.budgetUsd.toFixed(2)}) reached — approve, replace, or kill` });
+      return;
+    }
+    const rejected = d.attempts.map((a) => ({ ...a, rejected: true }));
+    setDraft({ ...d, streaming: true, error: undefined });
+    const nd = await generate(d.side, m, rejected);
+    if (draftRef.current?.side !== d.side || matchRef.current.id !== m.id) {
+      // killed or forked while rerolling: bank the cost, drop the text
+      put({ ...matchRef.current, discarded: [...matchRef.current.discarded, ...nd.attempts.slice(-1).map((a) => ({ ...a, rejected: true }))] });
+      return;
+    }
+    setDraft(nd);
+  }, [generate, put, setDraft, spend]);
+
+  /** KILL: throw the held draft away. Its attempts still cost money and are kept. */
+  const kill = useCallback(() => {
+    const d = draftRef.current;
+    if (d) {
+      put({ ...matchRef.current, discarded: [...matchRef.current.discarded, ...d.attempts.map((a) => ({ ...a, rejected: true }))] });
+      setDraft(null);
+    }
+    stop();
+  }, [put, setDraft, stop]);
 
   const resume = useCallback(() => { void runLoop(); }, [runLoop]);
 
   const inject = useCallback((target: Side, text: string) => {
     const m = matchRef.current;
     const i: Inject = { id: uid(), target, text, afterTurn: m.turns.length - 1, at: Date.now() };
-    matchRef.current = { ...m, injects: [...m.injects, i] };
-    setMatch(matchRef.current);
-  }, []);
+    put({ ...m, injects: [...m.injects, i] });
+  }, [put]);
 
   /** MULTIVERSE: fork the timeline at a turn and run the alternate. */
   const forkAt = useCallback((index: number) => {
+    stop();
     const m = matchRef.current;
+    if (draftRef.current) {
+      m.discarded.push(...draftRef.current.attempts.map((a) => ({ ...a, rejected: true })));
+    }
     setBranches((b) => [...b, m]);
     const forked: MatchState = {
       ...m, id: uid(), parentId: m.id, forkedAtTurn: index, status: "paused",
       turns: m.turns.slice(0, index + 1),
       injects: m.injects.filter((i) => i.afterTurn <= index),
+      discarded: [],
       label: `fork@${index}`,
     };
-    matchRef.current = forked; setMatch(forked); setDraft(null);
-  }, []);
+    put(forked); setDraft(null);
+  }, [put, setDraft, stop]);
 
   /** TWIN RUN: same match with the two loadouts swapped, to separate model from position. */
   const twinRun = useCallback(() => {
+    stop();
     const m = matchRef.current;
     setBranches((b) => [...b, m]);
-    const swapped: MatchConfig = {
-      ...m.config,
-      A: { ...m.config.B, callsign: m.config.B.callsign },
-      B: { ...m.config.A, callsign: m.config.A.callsign },
-    };
-    const next = { ...freshMatch(swapped), label: "twin (sides swapped)" };
-    matchRef.current = next; setMatch(next); setDraft(null);
+    const swapped: MatchConfig = { ...m.config, A: { ...m.config.B }, B: { ...m.config.A } };
+    put({ ...freshMatch(swapped), label: "twin (sides swapped)" }); setDraft(null);
     void runLoop();
-  }, [runLoop]);
+  }, [put, runLoop, setDraft, stop]);
 
   const setMode = useCallback((mode: Mode) => setConfig((c) => ({ ...c, mode })), []);
 
@@ -456,7 +517,7 @@ export function useMatch() {
     match, branches, setBranches,
     draft, setDraft, live,
     voice, setVoice,
-    start, stop, resume, approve, replaceWith, regenerate, inject, forkAt, twinRun,
+    start, stop, resume, approve, replaceWith, regenerate, kill, inject, forkAt, twinRun,
     spend: spend(match),
     scenario: scenarioById(config.scenarioId),
     scenarios: SCENARIOS,
